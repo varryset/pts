@@ -1024,8 +1024,15 @@ function openDiag(){
 }
 async function diagTest(){
   const r=$('#dgRes');if(!r)return;r.textContent='Testing...';
-  try{const t0=Date.now();await run('api_sync',S.ver);r.innerHTML='<span style="color:var(--emer);font-weight:700">Connected OK</span> ('+((Date.now()-t0)/1000).toFixed(1)+'s). The sheet is reachable and the PIN is accepted.';}
-  catch(e){r.innerHTML='<span style="color:var(--rose);font-weight:700">Failed:</span> '+esc(clean(e.message||e));}
+  try{
+    const t0=Date.now();let x=null;
+    try{x=await run('api_info');}catch(e){if(!/Unknown action|not a function|No function|Script function not found/i.test(String(e.message||e)))throw e;await run('api_sync',S.ver);}
+    const sec=((Date.now()-t0)/1000).toFixed(1),ok='<span style="color:var(--emer)">OK</span>',bad=v=>'<span style="color:var(--rose)">'+esc(v)+'</span>';
+    let h='<span style="color:var(--emer);font-weight:700">Connected OK</span> ('+sec+'s). The PIN is accepted.';
+    if(x&&x.ss)h+='<br>Saving into sheet: <b>'+esc(x.ss)+'</b> · '+x.rows+' row(s) in its Issues tab'+(x.url?'<br><span style="word-break:break-all">'+esc(x.url)+'</span>':'')+'<br>Drive (photos): '+(x.drive==='ok'?ok:bad(x.drive))+' · Gmail: '+(x.gmail==='ok'?ok:bad(x.gmail));
+    else h+='<br>Update Code.gs and redeploy to also see which sheet and Drive access are in use.';
+    r.innerHTML=h;
+  }catch(e){r.innerHTML='<span style="color:var(--rose);font-weight:700">Failed:</span> '+esc(clean(e.message||e));}
 }
 function diagSave(){
   const u=(($('#dgUrl')||{}).value||'').trim(),p=(($('#dgPin')||{}).value||'').trim();
