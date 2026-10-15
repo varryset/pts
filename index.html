@@ -172,6 +172,9 @@ td.n,th.n{text-align:right}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--s900);color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:90;max-width:90%;text-align:center}
 #toast.show{opacity:1;transform:translate(-50%,0)}#toast.err{background:#be123c}
 #dlg{z-index:80}
+.dueN{width:70px;flex:none;padding:5px 6px;border:1.5px solid var(--b);border-radius:99px;font-size:13px;font-weight:700;text-align:center;background:#fff;outline:none}
+.dueH{font-size:12px;color:var(--s500);margin:5px 2px 0}
+@media(max-width:700px){.dueN{font-size:16px}}
 .card{padding:12px 14px 10px;border-left-width:5px;border-radius:14px}
 .c-top{gap:8px;font-size:12px}
 .cid{font-size:11.5px;padding:2px 7px}
@@ -289,6 +292,7 @@ window.addEventListener('error',function(e){
       <select id="bGrp" class="in hidden" title="Group / project"></select>
       <button class="btn sec sm" id="pullBtn" data-act="pull" title="Check Gmail for mails labelled Pull">&#9993; Pull</button>
     </div>
+    <div id="bDue"></div>
     <div class="cats" id="bCats"></div>
     <div id="bFx"></div>
     <div class="pills" id="bPills"></div>
@@ -362,6 +366,7 @@ const S={
   cfg:cache?fixCfg(cache.cfg):DEF_CFG(),
   ver:cache&&typeof cache.ver==='number'?cache.ver:-1, me:cache&&cache.me?String(cache.me):'',
   view:'raise', tab:'Open', q:'', fCat:'', fAs:'', fGrp:'', openG:LS.get('it2_og',{}), fx:'',
+  fDue:(['all','7','15','30','c'].includes(LS.get('it2_due','all'))?LS.get('it2_due','all'):'all'), dueN:Math.min(365,Math.max(1,Math.round(+LS.get('it2_dueN',45))||45)),
   loaded:!!cache, err:'', lastSync:0, vault:LS.get('it2_vault',null), vaultBusy:false
 };
 let OUT=LS.get('it2_out',[]);if(!Array.isArray(OUT))OUT=[];
@@ -381,6 +386,7 @@ async function loadContacts(manual){
   ctBusy=false;if(b)b.disabled=false;
 }
 let draining=false, syncing=false, saveT=0, pulling=false;
+let LASTERR=LS.get('it2_lasterr',null), INFLIGHT=null;
 const mem=new Map();
 function persist(){clearTimeout(saveT);saveT=setTimeout(()=>LS.set('it2_cache',{issues:S.issues,cfg:S.cfg,ver:S.ver,me:S.me}),250);}
 function saveOut(){LS.set('it2_out',OUT);}
@@ -395,7 +401,7 @@ const blobDel=k=>{mem.delete(k);idb.del(k).catch(()=>{});};
 /* On GitHub Pages there is no google.script.run: calls go to the Apps Script web app as JSON, protected by your PIN */
 let noPrompt=false;
 async function remote(fn,a){
-  let url=(window.APP_API&&window.APP_API.url)||LS.get('it2_url','');
+  let url=LS.get('it2_url','')||(window.APP_API&&window.APP_API.url)||'';
   if(!url){
     if(noPrompt)throw new Error('Locked: tap the banner to enter the web app address');
     url=(prompt('Paste your Apps Script web app address (ends with /exec):')||'').trim();
@@ -409,11 +415,20 @@ async function remote(fn,a){
     if(!pin){noPrompt=true;throw new Error('Locked: PIN needed');}
     LS.set('it2_pin',pin);
   }
-  const ac=new AbortController(),t=setTimeout(()=>ac.abort(),90000);let j;
+  const ac=new AbortController(),t=setTimeout(()=>ac.abort(),90000);let j,txt='',st=0;
   try{
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:pin,fn:fn,args:a}),signal:ac.signal});
-    j=await r.json();
+    st=r.status;txt=await r.text();
+  }catch(e){
+    throw new Error(e&&e.name==='AbortError'?'No answer from the web app within 90 seconds (slow connection?)':'Cannot reach the web app ('+((e&&e.message)||e)+'). Check the internet connection, the web app address, and that the deployment access is set to Anyone.');
   }finally{clearTimeout(t);}
+  try{j=JSON.parse(txt);}catch(e){
+    let m='The web app sent back a page instead of data (HTTP '+st+'): '+txt.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,140);
+    if(/doPost/i.test(txt))m='The web app has no doPost yet. In Apps Script: Deploy > Manage deployments > pencil > New version > Deploy.';
+    else if(/accounts\.google|sign in|ServiceLogin/i.test(txt))m='The web app is asking for a Google sign-in. Set Who has access to Anyone in the deployment.';
+    else if(/too many times|quota/i.test(txt))m='Google says too many requests right now. Wait a few minutes and retry.';
+    throw new Error(m);
+  }
   if(j&&j.error){
     if(j.error==='AUTH'){LS.del('it2_pin');noPrompt=true;throw new Error('Wrong PIN - tap to retry and enter it again');}
     if(j.error==='AUTHLOCKED')throw new Error('Too many wrong PINs. Try again in 15 minutes.');
@@ -471,21 +486,27 @@ async function send(op){
   const r=await run('api_addPhoto',op.id,op.kind,b,op.taken,op.pid);blobDel(op.pid);return r;
 }
 async function drain(){
-  if(draining)return;draining=true;setSync();let failed=false;
+  if(draining)return;draining=true;setSync();let failed=false;const blocked=new Set();
   try{
-    while(OUT.length){
-      const op=OUT[0];let res;
+    for(;;){
+      const op=OUT.find(o=>!blocked.has(o.id)&&!(o.src&&blocked.has(o.src)));
+      if(!op)break;
+      const rm=()=>{const x=OUT.indexOf(op);if(x>=0)OUT.splice(x,1);};
+      let res;INFLIGHT=op;
       try{res=await send(op);}
       catch(e){
-        const m=String(e.message||e);
-        if(perm(m)){OUT.shift();saveOut();toast(clean(m),'err');failed=true;S.ver=-1;continue;}
+        INFLIGHT=null;
+        const m=String(e.message||e);LASTERR={m:clean(m),t:Date.now()};LS.set('it2_lasterr',LASTERR);
+        if(perm(m)){rm();saveOut();toast(clean(m),'err');failed=true;S.ver=-1;continue;}
         op.tries=(op.tries||0)+1;saveOut();setSync();
-        if(op.tries>=4)break;await sleep(1200*op.tries);continue;
+        if(op.tries>=4){blocked.add(op.id);if(op.src)blocked.add(op.src);}else await sleep(1200*op.tries);
+        continue;
       }
-      OUT.shift();saveOut();afterWrite(op,res);try{render();}catch(e){}
+      INFLIGHT=null;rm();saveOut();afterWrite(op,res);try{render();}catch(e){}
     }
-  }finally{draining=false;setSync();}
+  }finally{draining=false;INFLIGHT=null;setSync();}
   if(!OUT.length){persist();try{render();}catch(e){}sync(failed);}
+  else{try{render();}catch(e){}}
 }
 function retry(){noPrompt=false;OUT.forEach(o=>o.tries=0);saveOut();drain();sync();}
 function setSync(){
@@ -494,7 +515,7 @@ function setSync(){
   b.classList.remove('hidden');
   const stuck=!draining&&OUT.some(o=>o.tries>0);
   b.className='sync'+(stuck?' warn':'');
-  b.textContent=stuck?OUT.length+' unsent \u00b7 tap to retry':'Saving\u2026';
+  b.textContent=stuck?OUT.length+' unsent \u00b7 tap for details':'Saving\u2026';
 }
 const isPending=id=>OUT.some(o=>o.id===id);
 const pendingPh=id=>OUT.filter(o=>o.t==='photo'&&o.id===id).length;
@@ -652,6 +673,7 @@ const desk=()=>matchMedia('(min-width:860px)').matches;
 const isOver=i=>ACTIVE.includes(i.st)&&i.due&&i.due<ymd(new Date());
 function filtered(skipCat){
   const q=S.q.toLowerCase().split(/\s+/).filter(Boolean),stale=+S.cfg.set.StaleDays||3;
+  const win=S.fDue==='all'?'':ymd(new Date(Date.now()+(S.fDue==='c'?S.dueN:+S.fDue)*864e5));
   return S.issues.filter(i=>{
     if(!skipCat&&S.fCat&&i.cat!==S.fCat)return false;
     if(S.fAs==='__none'){if(i.as)return false;}else if(S.fAs&&i.as!==S.fAs)return false;
@@ -659,11 +681,13 @@ function filtered(skipCat){
     if(S.fx==='stale'&&!(ACTIVE.includes(i.st)&&dAgo(i.upd)>=stale))return false;
     if(S.fx==='unas'&&!(ACTIVE.includes(i.st)&&!i.as))return false;
     if(S.fGrp&&i.g!==S.fGrp)return false;
+    if(win&&ACTIVE.includes(i.st)&&(!i.due||i.due>win))return false;
     if(q.length){const h=(i.g+' '+i.id+' '+i.d+' '+i.as+' '+i.cat+' '+i.loc+' '+i.tags.join(' ')+' '+shortBy(i.by)+' '+i.mf+' '+i.ms).toLowerCase();if(!q.every(w=>h.includes(w)))return false;}
     return true;});
 }
 function sortCol(st,a){
   if(st==='Done'||st==='Cancelled')return a.sort((x,y)=>(y.closed||'').localeCompare(x.closed||''));
+  if(S.fDue!=='all')return a.sort((x,y)=>(x.due||'9999').localeCompare(y.due||'9999')||(PRI_RANK[y.pri]||0)-(PRI_RANK[x.pri]||0));
   return a.sort((x,y)=>(PRI_RANK[y.pri]||0)-(PRI_RANK[x.pri]||0)||(x.due||'9999').localeCompare(y.due||'9999')||(y.raised||'').localeCompare(x.raised||''));
 }
 const NEXT={'Open':['In Progress','\u25B6','Start'],'In Progress':['Done','\u2713','Mark done']};
@@ -695,11 +719,14 @@ function renderBoard0(){
   const act=filtered(true).filter(i=>ACTIVE.includes(i.st)),cnt={};act.forEach(i=>cnt[i.cat]=(cnt[i.cat]||0)+1);
   const cats=S.cfg.cats.concat(Object.keys(cnt).filter(c=>!S.cfg.cats.includes(c)));
   $('#bCats').innerHTML=`<button class="chip${!S.fCat?' on':''}" data-act="cat" data-c="">All<b>${act.length}</b></button>`+cats.map(c=>`<button class="chip${S.fCat===c?' on':''}" data-act="cat" data-c="${esc(c)}">${ICON[c]||'\u{1F4CC}'} ${esc(c)}<b>${cnt[c]||0}</b></button>`).join('');
+  const dn=S.fDue==='c'?S.dueN:+S.fDue,nOpen=list.filter(i=>ACTIVE.includes(i.st)).length;
+  $('#bDue').innerHTML=`<div class="cats" style="margin-top:8px;align-items:center"><button class="chip${S.fDue==='all'?' on':''}" data-act="duewin" data-d="all">All tasks</button><button class="chip${S.fDue==='7'?' on':''}" data-act="duewin" data-d="7">Next 7 days</button><button class="chip${S.fDue==='15'?' on':''}" data-act="duewin" data-d="15">15 days</button><button class="chip${S.fDue==='30'?' on':''}" data-act="duewin" data-d="30">30 days</button><button class="chip${S.fDue==='c'?' on':''}" data-act="duewin" data-d="c">Custom</button>${S.fDue==='c'?`<input id="dueN" class="dueN" type="number" inputmode="numeric" min="1" max="365" value="${S.dueN}" aria-label="Custom number of days"><span class="hint" style="flex:none">days</span>`:''}</div>`+(S.fDue==='all'?'':`<div class="dueH">Showing ${nOpen} open task(s) due within ${dn} day(s), overdue included. Tasks with no due date appear under All tasks.</div>`);
   const fxl={over:'Overdue only',stale:'No recent update',unas:'Unassigned'};
   $('#bFx').innerHTML=S.fx?`<span class="fx">${fxl[S.fx]}<button data-act="clrfx">\u2715</button></span>`:'';
   $('#bPills').classList.toggle('hidden',desk());
   $('#bPills').innerHTML=ST.map(s=>`<button class="pill${S.tab===s?' on':''}" data-act="tab" data-s="${s}">${ST_SHORT[s]}<b>${g[s].length}</b></button>`).join('');
-  $('#bBanner').innerHTML=S.err&&!S.loaded?`<div class="banner" data-act="retry">Could not load from Google Sheets: ${esc(S.err)}. Tap to retry.</div>`:'';
+  const stuckN=!draining&&OUT.some(o=>(o.tries||0)>=4);
+  $('#bBanner').innerHTML=S.err&&!S.loaded?`<div class="banner" data-act="retry">Could not load from Google Sheets: ${esc(S.err)}. Tap for details.</div>`:(stuckN&&LASTERR?`<div class="banner" data-act="retry">${OUT.length} change(s) not saved: ${esc(LASTERR.m)} Tap for details.</div>`:'');
   if(!S.loaded&&!S.issues.length&&!S.err){$('#board').innerHTML='<div class="list"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';return;}
   if(desk()){
     const cls={'Open':'t-open','In Progress':'t-prog','Action Needed':'t-act','Done':'t-done','Cancelled':'t-can'};
@@ -939,7 +966,7 @@ function askDelete(id){
 function doDelete(id){
   S.issues=S.issues.filter(x=>x.id!==id);
   if(S.vault){S.vault=S.vault.filter(x=>x.id!==id);LS.set('it2_vault',S.vault);}
-  OUT=OUT.filter((o,k)=>{const mine=o.id===id||o.src===id;if(mine&&!(draining&&k===0)){if(o.t==='photo')blobDel(o.pid);return false;}return true;});
+  OUT=OUT.filter(o=>{const mine=o.id===id||o.src===id;if(mine&&o!==INFLIGHT){if(o.t==='photo')blobDel(o.pid);return false;}return true;});
   OUT.push({n:uid(),t:'delete',id});
   saveOut();persist();
   if(D&&D.id===id){$('#detail').classList.add('hidden');$('#mail').classList.add('hidden');document.body.classList.remove('noscroll');D=null;}
@@ -981,10 +1008,37 @@ function doMerge(srcId,tgtId){
   render();fillLists();toast('Merged into '+tgtId);drain();
 }
 
+/* ================= sync details (tap the "unsent" badge) ================= */
+function openDiag(){
+  const rm=!(window.google&&google.script&&google.script.run);
+  const url=LS.get('it2_url','')||(window.APP_API&&window.APP_API.url)||'';
+  const err=OUT.length&&LASTERR?LASTERR.m:(S.err||''),when=LASTERR&&LASTERR.t&&OUT.length?new Date(LASTERR.t).toLocaleTimeString():'';
+  $('#dlg').innerHTML=`<div class="sheet" style="max-width:440px;border-radius:20px"><div class="sh-h"><b>Sync details</b><button class="x" data-act="dlgno">✕</button></div><div class="sh-b">
+   <p style="margin:0 0 6px"><b>${OUT.length}</b> change(s) waiting to be saved to your sheet.</p>
+   <div class="box" style="margin:6px 0;word-break:break-word">${err?'<b>Last problem:</b> '+esc(err)+(when?' <span class="hint">('+when+')</span>':''):'No problem recorded yet. Tap Test connection.'}</div>
+   <div id="dgRes" class="hint" style="min-height:18px"></div>
+   <div class="row" style="margin-top:10px"><button class="btn" data-act="diagretry" style="flex:1">Retry now</button><button class="btn sec" data-act="diagtest" style="flex:1">Test connection</button></div>
+   ${rm?`<label class="l">Web app address (ends with /exec)</label><input id="dgUrl" class="in" value="${esc(url)}" autocomplete="off" autocapitalize="off" spellcheck="false"><label class="l">App PIN</label><input id="dgPin" class="in" type="password" placeholder="Leave empty to keep the saved PIN" autocomplete="off"><button class="btn sec full" data-act="diagsave" style="margin-top:10px">Save address / PIN and retry</button>`:''}
+   <p class="hint" style="margin-top:12px">Your unsent entries stay on this phone until they reach the sheet. Please do not clear the browser data.</p></div></div>`;
+  $('#dlg').classList.remove('hidden');
+}
+async function diagTest(){
+  const r=$('#dgRes');if(!r)return;r.textContent='Testing...';
+  try{const t0=Date.now();await run('api_sync',S.ver);r.innerHTML='<span style="color:var(--emer);font-weight:700">Connected OK</span> ('+((Date.now()-t0)/1000).toFixed(1)+'s). The sheet is reachable and the PIN is accepted.';}
+  catch(e){r.innerHTML='<span style="color:var(--rose);font-weight:700">Failed:</span> '+esc(clean(e.message||e));}
+}
+function diagSave(){
+  const u=(($('#dgUrl')||{}).value||'').trim(),p=(($('#dgPin')||{}).value||'').trim();
+  if(u)LS.set('it2_url',u);if(p)LS.set('it2_pin',p);
+  noPrompt=false;dlgClose();retry();toast('Retrying...');
+}
+
 /* ================= events (one delegated handler) ================= */
 const H={
   view:t=>show(t.dataset.v),
-  retry:()=>{retry();if(!S.loaded)sync(true);},
+  retry:()=>{if(OUT.length||S.err)openDiag();else{retry();if(!S.loaded)sync(true);}},
+  diagretry:()=>{dlgClose();retry();toast('Retrying...');}, diagtest:diagTest, diagsave:diagSave,
+  duewin:t=>{S.fDue=t.dataset.d;LS.set('it2_due',S.fDue);renderBoard();},
   contacts:()=>loadContacts(true),
   pull:pullMail,
   cam:()=>pick(true,addNew), gal:()=>pick(false,addNew),
@@ -1011,7 +1065,7 @@ const H={
   vdel:t=>askDelete(t.dataset.id),
   dlgno:dlgClose, dlgyes:()=>{const f=DLG;dlgClose();if(f)f();},
   wanudge:t=>{const k=t.dataset.k;S.issues.filter(i=>ACTIVE.includes(i.st)&&(i.as||'__none')===k).slice(0,10).forEach(i=>logWa(i,waPhone(i.as),'Reminder about pending items sent from the Report ('+i.id+')'));toast('Logged in each issue timeline');},
-  rfx:t=>{S.fx=t.dataset.fx||'';S.fAs='';S.fCat='';S.q='';S.tab=t.dataset.tab||'Open';$('#bAs').value='';$('#bQ').value='';show('board');},
+  rfx:t=>{S.fx=t.dataset.fx||'';S.fAs='';S.fCat='';S.q='';S.fGrp='';S.fDue='all';LS.set('it2_due','all');S.tab=t.dataset.tab||'Open';$('#bAs').value='';$('#bQ').value='';$('#bGrp').value='';show('board');},
   rperson:t=>{S.fAs=t.dataset.k;S.fx='';S.tab='Open';$('#bAs').value=S.fAs;show('board');},
   digest:async t=>{t.disabled=true;try{await run('api_sendDigest');toast('Digest emailed');}catch(e){toast(clean(e.message),'err');}t.disabled=false;},
   archive:async t=>{t.disabled=true;try{const r=await run('api_archive',+$('#vDays').value||0);toast(r.count+' item(s) archived');await sync(true);await loadVault();}catch(e){toast(clean(e.message),'err');}t.disabled=false;},
@@ -1037,6 +1091,7 @@ $('#fAs').addEventListener('focus',()=>{if(!ctTried&&!CONTACTS.length)loadContac
 let qt;$('#bQ').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{S.q=e.target.value.trim();renderBoard();},120);});
 $('#bAs').addEventListener('change',e=>{S.fAs=e.target.value;renderBoard();});
 $('#bGrp').addEventListener('change',e=>{S.fGrp=e.target.value;renderBoard();});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='dueN'){let n=Math.round(+e.target.value);if(!(n>=1))n=1;if(n>365)n=365;S.dueN=n;LS.set('it2_dueN',n);renderBoard();}});
 let dragId=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest&&e.target.closest('.card');if(c){dragId=c.dataset.id;e.dataTransfer.setData('text/plain',dragId);}});
 document.addEventListener('dragover',e=>{const c=e.target.closest&&e.target.closest('[data-drop]');if(c){e.preventDefault();c.classList.add('over');}});
