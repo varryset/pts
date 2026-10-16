@@ -4,14 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#4f46e5">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Issues">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<script src="config.js"></script>
+<!--PWA_HEAD-->
 <title>Google Issue Tracker</title>
 <style>
 :root{--b:#4f46e5;--bd:#4338ca;--b50:#eef2ff;--b100:#e0e7ff;--s50:#f8fafc;--s100:#f1f5f9;--s200:#e2e8f0;--s300:#cbd5e1;--s400:#94a3b8;--s500:#64748b;--s600:#475569;--s700:#334155;--s800:#1e293b;--s900:#0f172a;--rose:#e11d48;--emer:#059669;--amb:#d97706}
@@ -171,6 +164,8 @@ td.n,th.n{text-align:right}
 #lb img{max-width:100%;max-height:100%}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--s900);color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:90;max-width:90%;text-align:center}
 #toast.show{opacity:1;transform:translate(-50%,0)}#toast.err{background:#be123c}
+#toast.show.act{pointer-events:auto}
+#toast button{margin-left:12px;color:#a5b4fc;font-weight:800;padding:2px 4px}
 #dlg{z-index:80}
 .dueN{width:70px;flex:none;padding:5px 6px;border:1.5px solid var(--b);border-radius:99px;font-size:13px;font-weight:700;text-align:center;background:#fff;outline:none}
 .dueH{font-size:12px;color:var(--s500);margin:5px 2px 0}
@@ -210,6 +205,12 @@ td.n,th.n{text-align:right}
 .stp button{padding:11px 2px;font-size:12.5px}
 .btn{padding:12px 16px;font-size:14px}
 .btn.sm{padding:8px 12px;font-size:13px}
+/* quick add on the board */
+.qa{display:flex;gap:8px;margin-top:10px}
+.qa .in{flex:1}
+.qa .btn{flex:none;padding:9px 16px}
+.qin{margin:0 0 8px;padding:6px 9px;border-style:dashed;background:transparent;font-size:13px}
+.thumbs .up[data-act]{color:var(--rose);border-color:var(--rose);cursor:pointer}
 @media(max-width:700px){
  body{font-size:15px}
  main{padding:10px 10px 110px}
@@ -222,6 +223,7 @@ td.n,th.n{text-align:right}
  .cats .chip{padding:8px 14px;font-size:13.5px}
  .sheet{max-height:96vh;max-height:96dvh}
  .card-box{padding:14px}
+ .qin{font-size:16px}
 }
 @media(min-width:860px){
  .c-desc{font-size:14px}.c-th{width:48px;height:48px}.c-more{font-size:12px}.card{padding:10px 12px 8px}
@@ -292,6 +294,8 @@ window.addEventListener('error',function(e){
       <select id="bGrp" class="in hidden" title="Group / project"></select>
       <button class="btn sec sm" id="pullBtn" data-act="pull" title="Check Gmail for mails labelled Pull">&#9993; Pull</button>
     </div>
+    <div class="qa"><input id="qaT" class="in" maxlength="140" placeholder="+ Quick add: type a title, press Enter" enterkeyhint="done" autocomplete="off"><button class="btn" data-act="qadd">Add</button></div>
+    <div id="qaHint" class="dueH"></div>
     <div id="bDue"></div>
     <div class="cats" id="bCats"></div>
     <div id="bFx"></div>
@@ -330,7 +334,13 @@ const fd=s=>{if(!s)return'';const a=s.split('-');return new Date(+a[0],a[1]-1,+a
 const shortBy=b=>String(b||'').split('@')[0];
 /* storage keys are versioned (it2_) so data saved by an older layout can never break this one */
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
-let tt;function toast(m,type){const t=$('#toast');t.textContent=m;t.className='show'+(type==='err'?' err':'');clearTimeout(tt);tt=setTimeout(()=>t.className='',type==='err'?4200:2200);}
+let tt;
+/* act = {label, fn}: a button inside the toast (used for "Edit" after a quick add) */
+function toast(m,type,act){
+  const t=$('#toast');t.textContent=m;t.className='show'+(type==='err'?' err':'')+(act?' act':'');
+  if(act){const b=document.createElement('button');b.textContent=act.label;b.onclick=()=>{t.className='';act.fn();};t.appendChild(b);}
+  clearTimeout(tt);tt=setTimeout(()=>t.className='',act?5000:(type==='err'?4200:2200));
+}
 
 const ST=['Open','In Progress','Action Needed','Done','Cancelled'];
 const ACTIVE=['Open','In Progress','Action Needed'];
@@ -369,7 +379,13 @@ const S={
   fDue:(['all','7','15','30','c'].includes(LS.get('it2_due','all'))?LS.get('it2_due','all'):'all'), dueN:Math.min(365,Math.max(1,Math.round(+LS.get('it2_dueN',45))||45)),
   loaded:!!cache, err:'', lastSync:0, vault:LS.get('it2_vault',null), vaultBusy:false
 };
+/* Two independent queues (this is the key change):
+   OUT  = issue changes (create / update / delete / merge / comm)
+   POUT = photo uploads. A slow or failing photo can never block edits, and edits never wait behind a photo. */
 let OUT=LS.get('it2_out',[]);if(!Array.isArray(OUT))OUT=[];
+let POUT=LS.get('it2_pout',[]);if(!Array.isArray(POUT))POUT=[];
+/* older versions kept photos in the main queue: move them across */
+OUT.filter(o=>o&&o.t==='photo').forEach(o=>POUT.push(o));OUT=OUT.filter(o=>o&&o.t!=='photo');
 /* Google Contacts (read-only copy kept on this device; loaded on demand, never blocks the app) */
 let CONTACTS=LS.get('it2_contacts',[]);if(!Array.isArray(CONTACTS))CONTACTS=[];
 let ctTried=false, ctBusy=false, ctAuto=false;
@@ -385,11 +401,12 @@ async function loadContacts(manual){
   }catch(e){if(manual)toast(clean(e.message||e),'err');}
   ctBusy=false;if(b)b.disabled=false;
 }
-let draining=false, syncing=false, saveT=0, pulling=false;
-let LASTERR=LS.get('it2_lasterr',null), INFLIGHT=null;
+let draining=false, pdraining=false, syncing=false, saveT=0, pulling=false, writeSeq=0;
+let LASTERR=LS.get('it2_lasterr',null), PERR=null, INFLIGHT=null;
 const mem=new Map();
 function persist(){clearTimeout(saveT);saveT=setTimeout(()=>LS.set('it2_cache',{issues:S.issues,cfg:S.cfg,ver:S.ver,me:S.me}),250);}
 function saveOut(){LS.set('it2_out',OUT);}
+function savePout(){LS.set('it2_pout',POUT);}
 
 const idb=(()=>{let db;const open=()=>db?Promise.resolve(db):new Promise((res,rej)=>{try{const r=indexedDB.open('it_photos',1);r.onupgradeneeded=()=>r.result.createObjectStore('p');r.onsuccess=()=>{db=r.result;res(db)};r.onerror=()=>rej(r.error);}catch(e){rej(e)}});
   const tx=(m,f)=>open().then(d=>new Promise((res,rej)=>{const t=d.transaction('p',m),q=f(t.objectStore('p'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error);}));
@@ -415,12 +432,12 @@ async function remote(fn,a){
     if(!pin){noPrompt=true;throw new Error('Locked: PIN needed');}
     LS.set('it2_pin',pin);
   }
-  const ac=new AbortController(),t=setTimeout(()=>ac.abort(),90000);let j,txt='',st=0;
+  const ac=new AbortController(),t=setTimeout(()=>ac.abort(),120000);let j,txt='',st=0;
   try{
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({token:pin,fn:fn,args:a}),signal:ac.signal});
     st=r.status;txt=await r.text();
   }catch(e){
-    throw new Error(e&&e.name==='AbortError'?'No answer from the web app within 90 seconds (slow connection?)':'Cannot reach the web app ('+((e&&e.message)||e)+'). Check the internet connection, the web app address, and that the deployment access is set to Anyone.');
+    throw new Error(e&&e.name==='AbortError'?'No answer from the web app within 2 minutes (slow connection?)':'Cannot reach the web app ('+((e&&e.message)||e)+'). Check the internet connection, the web app address, and that the deployment access is set to Anyone.');
   }finally{clearTimeout(t);}
   try{j=JSON.parse(txt);}catch(e){
     let m='The web app sent back a page instead of data (HTTP '+st+'): '+txt.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,140);
@@ -437,9 +454,11 @@ async function remote(fn,a){
   }
   return j?j.r:null;
 }
-function run(fn,...a){return new Promise((ok,no)=>{
+/* tmo: photo uploads get longer than normal calls. A timeout here is safe: the server treats a repeated photo id as "already saved". */
+function run(fn,...a){return runT(120000,fn,...a);}
+function runT(tmo,fn,...a){return new Promise((ok,no)=>{
   if(!window.google||!google.script||!google.script.run){remote(fn,a).then(ok,no);return;}
-  let done=false;const t=setTimeout(()=>{if(!done){done=true;no(new Error('timeout'));}},90000);
+  let done=false;const t=setTimeout(()=>{if(!done){done=true;no(new Error('timeout'));}},tmo);
   google.script.run.withSuccessHandler(r=>{if(done)return;done=true;clearTimeout(t);ok(r);}).withFailureHandler(e=>{if(done)return;done=true;clearTimeout(t);no(new Error((e&&e.message)||String(e)));})[fn](...a);
 });}
 const perm=m=>String(m).indexOf('E!')>=0, clean=m=>String(m).replace(/^[\s\S]*?E!/,'');
@@ -455,15 +474,18 @@ function applySnapshot(r){
   S.issues=out;S.cfg=fixCfg(r.cfg);S.ver=r.ver;S.me=r.me||S.me;persist();
 }
 async function sync(force){
-  if(syncing)return;syncing=true;
+  if(syncing)return;syncing=true;const seq=writeSeq;let stale=false;
   try{
     const r=await run('api_sync',force?-1:S.ver);
     S.err='';
-    if(r&&r.same){if(r.me)S.me=r.me;}else if(r)applySnapshot(r);
-    S.loaded=true;
+    /* a save finished (or is still running) while this request was in flight: the reply may be older than that save, so it is thrown away and fetched again */
+    if(seq!==writeSeq||draining||pdraining)stale=true;
+    else if(r&&r.same){if(r.me)S.me=r.me;}else if(r)applySnapshot(r);
+    if(!stale)S.loaded=true;
   }catch(e){S.err=clean(e.message||e);}
   syncing=false;S.lastSync=Date.now();
   try{render();fillLists();}catch(e){console.error(e);}
+  if(stale&&!draining&&!pdraining)setTimeout(()=>sync(),600);
 }
 function mergePhotos(i,srv){const have=new Set((i.ph||[]).map(p=>p.id));(srv.ph||[]).forEach(p=>{if(!have.has(p.id))i.ph.push(p);});}
 function afterWrite(op,res){
@@ -482,8 +504,7 @@ async function send(op){
   if(op.t==='merge')return run('api_merge',op.src,op.id,op.n);
   if(op.t==='update')return run('api_update',op.id,op.ch,op.c,op.n,op.kind);
   if(op.t==='comm')return run('api_logComm',op.id,op.ch,op.to,op.subj,op.text,op.n);
-  const b=await blobGet(op.pid);if(!b)return null;
-  const r=await run('api_addPhoto',op.id,op.kind,b,op.taken,op.pid);blobDel(op.pid);return r;
+  return null;
 }
 async function drain(){
   if(draining)return;draining=true;setSync();let failed=false;const blocked=new Set();
@@ -502,23 +523,57 @@ async function drain(){
         if(op.tries>=4){blocked.add(op.id);if(op.src)blocked.add(op.src);}else await sleep(1200*op.tries);
         continue;
       }
-      INFLIGHT=null;rm();saveOut();afterWrite(op,res);try{render();}catch(e){}
+      INFLIGHT=null;rm();saveOut();writeSeq++;afterWrite(op,res);
+      if(op.t==='create')drainPhotos();   /* photos of a new issue were waiting for its row to exist */
+      try{render();}catch(e){}
     }
   }finally{draining=false;INFLIGHT=null;setSync();}
   if(!OUT.length){persist();try{render();}catch(e){}sync(failed);}
   else{try{render();}catch(e){}}
 }
-function retry(){noPrompt=false;OUT.forEach(o=>o.tries=0);saveOut();drain();sync();}
-function setSync(){
-  const b=$('#syncBadge');
-  if(!OUT.length){b.classList.add('hidden');return;}
-  b.classList.remove('hidden');
-  const stuck=!draining&&OUT.some(o=>o.tries>0);
-  b.className='sync'+(stuck?' warn':'');
-  b.textContent=stuck?OUT.length+' unsent \u00b7 tap for details':'Saving\u2026';
+
+/* ---- photo queue: its own loop, so photos and edits never block each other ---- */
+const waitingForCreate=id=>OUT.some(x=>x.t==='create'&&x.id===id);
+async function sendPhoto(op){
+  const b=await blobGet(op.pid);
+  /* never drop a photo silently: if the browser lost the picture, say so */
+  if(!b)throw new Error('E!A photo was lost before it could be uploaded (the browser cleared its storage). Please add it again.');
+  const r=await runT(120000,'api_addPhoto',op.id,op.kind,b,op.taken,op.pid);
+  blobDel(op.pid);return r;
 }
-const isPending=id=>OUT.some(o=>o.id===id);
-const pendingPh=id=>OUT.filter(o=>o.t==='photo'&&o.id===id).length;
+async function drainPhotos(){
+  if(pdraining)return;pdraining=true;setSync();
+  try{
+    for(;;){
+      const op=POUT.find(o=>!o.failed&&!waitingForCreate(o.id));
+      if(!op)break;
+      const rm=()=>{const x=POUT.indexOf(op);if(x>=0)POUT.splice(x,1);savePout();};
+      let res;
+      try{res=await sendPhoto(op);}
+      catch(e){
+        const m=String(e.message||e);PERR={m:clean(m),t:Date.now()};
+        if(perm(m)){rm();toast(clean(m),'err');setSync();try{render();}catch(x){}continue;}
+        op.tries=(op.tries||0)+1;
+        if(op.tries>=5){op.failed=true;savePout();setSync();try{render();}catch(x){}continue;}
+        savePout();setSync();await sleep(Math.min(15000,1500*Math.pow(2,op.tries-1)));continue;
+      }
+      rm();writeSeq++;afterWrite({id:op.id},res);setSync();try{render();}catch(e){}
+    }
+  }finally{pdraining=false;setSync();}
+  if(!OUT.length&&!POUT.some(o=>!o.failed))sync();
+}
+function retry(){noPrompt=false;OUT.forEach(o=>o.tries=0);POUT.forEach(o=>{o.tries=0;o.failed=false;});saveOut();savePout();drain();drainPhotos();sync();}
+function retryPhotos(){POUT.forEach(o=>{o.tries=0;o.failed=false;});savePout();setSync();try{render();}catch(e){}drainPhotos();}
+function setSync(){
+  const b=$('#syncBadge'),n=OUT.length,pn=POUT.length;
+  if(!n&&!pn){b.classList.add('hidden');return;}
+  b.classList.remove('hidden');
+  const stuck=(!draining&&OUT.some(o=>o.tries>0))||POUT.some(o=>o.failed);
+  b.className='sync'+(stuck?' warn':'');
+  b.textContent=stuck?(n+pn)+' unsent \u00b7 tap for details':(pn&&!n?'Uploading '+pn+' photo'+(pn>1?'s':'')+'\u2026':'Saving\u2026');
+}
+const isPending=id=>OUT.some(o=>o.id===id)||POUT.some(o=>o.id===id);
+const pendingPh=id=>POUT.filter(o=>o.id===id).length;
 
 /* ================= Gmail pull (only when you press the button) ================= */
 async function pullMail(){
@@ -606,7 +661,7 @@ function hydrate(root){
   $$('img[data-fid]',root).forEach(im=>{
     const id=im.dataset.fid;
     const viaScript=async()=>{if(!imgCache.has(id))imgCache.set(id,run('api_photoData',id).catch(()=>''));const d=await imgCache.get(id);if(d)im.src=d;};
-    if(S.cfg.pub===false||/^S_/.test(id)){viaScript();return;}
+    if(S.cfg.pub===false){viaScript();return;}
     im.onerror=()=>{im.onerror=null;viaScript();};
     im.src='https://drive.google.com/thumbnail?id='+id+'&sz=w'+(im.dataset.sz||'300');
   });
@@ -661,11 +716,38 @@ async function submit(){
       st:'Open',rem:'',upd:now,closed:'',arch:'',ph:[],log:[{t:now,by:S.me,k:'create',a:'Issue raised'+(as?' - assigned to '+as:'')}]});
     S.issues.unshift(iss);mirrorLists({loc:iss.loc,tags,as,phone,email});
     OUT.push({n:uid(),t:'create',id:iss.id,issue:Object.assign({},iss,{phone,email})});
-    for(const p of NP){const pid=uid();await blobPut(pid,p.b64);OUT.push({n:uid(),t:'photo',id:iss.id,kind:'issue',pid,taken:p.taken});}
-    saveOut();persist();
+    for(const p of NP){const pid=uid();await blobPut(pid,p.b64);POUT.push({n:uid(),t:'photo',id:iss.id,kind:'issue',pid,taken:p.taken});}
+    saveOut();savePout();persist();
     ['fDesc','fAs','fPhone','fEmail','fTags','fLoc','fGrp'].forEach(k=>$('#'+k).value='');ctAuto=false;NP=[];GPS='';$('#gpsBtn').textContent='\u{1F4CD} GPS';$('#fPhoneWrap').classList.add('hidden');$('#fPri').value='Medium';defaultDue();drawSlots();
     S.tab='Open';S.q='';S.fx='';$('#bQ').value='';show('board');toast('Saved '+iss.id);fillLists();drain();
   }finally{btn.disabled=false;}
+}
+
+/* ================= quick add (from the board) =================
+   Type a title, press Enter. The new task takes whatever the board is currently filtered by
+   (category, person, group, due window, status column) and can be edited afterwards by tapping the card
+   or the Edit button that appears in the confirmation. */
+function qaStatus(){return desk()?'Open':(ACTIVE.includes(S.tab)?S.tab:'Open');}
+function qaDefaults(status){
+  const cat=S.fCat||$('#fCat').value||S.cfg.cats[0]||'Others';
+  const as=S.fAs&&S.fAs!=='__none'?S.fAs:'';
+  let n=3;   /* same default as the full form (+3 days) ... */
+  if(S.fDue!=='all'){const w=S.fDue==='c'?S.dueN:+S.fDue;n=Math.min(3,Math.max(0,w));}   /* ... but never outside the due window being viewed */
+  const d=new Date();d.setDate(d.getDate()+n);
+  return{cat,as,g:S.fGrp||'',due:ymd(d),st:status||'Open'};
+}
+function quickCreate(title,status){
+  title=String(title||'').trim();if(!title)return null;
+  const o=qaDefaults(status),now=new Date().toISOString();
+  const iss=fixIssue({id:newId(),raised:now,by:S.me,cat:o.cat,as:o.as,asOn:o.as?now:'',pri:'Medium',due:o.due,d:title,tags:[],loc:'',g:o.g,gps:'',
+    st:'Open',rem:'',upd:now,closed:'',arch:'',ph:[],log:[{t:now,by:S.me,k:'create',a:'Issue raised'+(o.as?' - assigned to '+o.as:'')}]});
+  S.issues.unshift(iss);mirrorLists({as:o.as,loc:'',tags:[]});
+  OUT.push({n:uid(),t:'create',id:iss.id,issue:Object.assign({},iss,{phone:'',email:''})});
+  if(o.st!=='Open'){applyLocal(iss,{st:o.st},'','');OUT.push({n:uid(),t:'update',id:iss.id,ch:{st:o.st},c:'',kind:''});}   /* the server always creates as Open */
+  saveOut();persist();fillLists();render();drain();
+  const shown=filtered().some(x=>x.id===iss.id);
+  toast('Added '+iss.id+(shown?'':' (hidden by the current filters)'),'',{label:'Edit',fn:()=>openDetail(iss.id)});
+  return iss;
 }
 
 /* ================= board ================= */
@@ -713,7 +795,14 @@ function cards(list){
   });
   return h;
 }
-function renderBoard(){renderBoard0();try{hydrate($('#board'));}catch(e){}}
+/* the per-column "+ Add" boxes keep their text and focus when the board redraws */
+function renderBoard(){
+  const act=document.activeElement,kf=act&&act.classList&&act.classList.contains('qin')?act.dataset.s:null,kv={};
+  $$('#board .qin').forEach(x=>{if(x.value)kv[x.dataset.s]=x.value;});
+  renderBoard0();
+  $$('#board .qin').forEach(x=>{if(kv[x.dataset.s]!=null)x.value=kv[x.dataset.s];if(kf!==null&&x.dataset.s===kf)x.focus({preventScroll:true});});
+  try{hydrate($('#board'));}catch(e){}
+}
 function renderBoard0(){
   const list=filtered(),g={};ST.forEach(s=>g[s]=[]);list.forEach(i=>(g[i.st]||g.Open).push(i));ST.forEach(s=>sortCol(s,g[s]));
   const act=filtered(true).filter(i=>ACTIVE.includes(i.st)),cnt={};act.forEach(i=>cnt[i.cat]=(cnt[i.cat]||0)+1);
@@ -723,14 +812,17 @@ function renderBoard0(){
   $('#bDue').innerHTML=`<div class="cats" style="margin-top:8px;align-items:center"><button class="chip${S.fDue==='all'?' on':''}" data-act="duewin" data-d="all">All tasks</button><button class="chip${S.fDue==='7'?' on':''}" data-act="duewin" data-d="7">Next 7 days</button><button class="chip${S.fDue==='15'?' on':''}" data-act="duewin" data-d="15">15 days</button><button class="chip${S.fDue==='30'?' on':''}" data-act="duewin" data-d="30">30 days</button><button class="chip${S.fDue==='c'?' on':''}" data-act="duewin" data-d="c">Custom</button>${S.fDue==='c'?`<input id="dueN" class="dueN" type="number" inputmode="numeric" min="1" max="365" value="${S.dueN}" aria-label="Custom number of days"><span class="hint" style="flex:none">days</span>`:''}</div>`+(S.fDue==='all'?'':`<div class="dueH">Showing ${nOpen} open task(s) due within ${dn} day(s), overdue included. Tasks with no due date appear under All tasks.</div>`);
   const fxl={over:'Overdue only',stale:'No recent update',unas:'Unassigned'};
   $('#bFx').innerHTML=S.fx?`<span class="fx">${fxl[S.fx]}<button data-act="clrfx">\u2715</button></span>`:'';
+  /* tell the user what a quick-added task will inherit from the current filters */
+  const qd=qaDefaults(qaStatus());
+  $('#qaHint').textContent='New task gets: '+(ICON[qd.cat]||'\u{1F4CC}')+' '+qd.cat+' \u00b7 '+(qd.as||'Unassigned')+(qd.g?' \u00b7 \u{1F4C1} '+qd.g:'')+' \u00b7 due '+fd(qd.due)+(qd.st!=='Open'?' \u00b7 '+qd.st:'')+'. Edit it afterwards if needed.';
   $('#bPills').classList.toggle('hidden',desk());
   $('#bPills').innerHTML=ST.map(s=>`<button class="pill${S.tab===s?' on':''}" data-act="tab" data-s="${s}">${ST_SHORT[s]}<b>${g[s].length}</b></button>`).join('');
-  const stuckN=!draining&&OUT.some(o=>(o.tries||0)>=4);
-  $('#bBanner').innerHTML=S.err&&!S.loaded?`<div class="banner" data-act="retry">Could not load from Google Sheets: ${esc(S.err)}. Tap for details.</div>`:(stuckN&&LASTERR?`<div class="banner" data-act="retry">${OUT.length} change(s) not saved: ${esc(LASTERR.m)} Tap for details.</div>`:'');
+  const stuckN=!draining&&OUT.some(o=>(o.tries||0)>=4),pf=POUT.filter(o=>o.failed).length;
+  $('#bBanner').innerHTML=S.err&&!S.loaded?`<div class="banner" data-act="retry">Could not load from Google Sheets: ${esc(S.err)}. Tap for details.</div>`:(stuckN&&LASTERR?`<div class="banner" data-act="retry">${OUT.length} change(s) not saved: ${esc(LASTERR.m)} Tap for details.</div>`:(pf?`<div class="banner" data-act="rph">${pf} photo(s) not uploaded${PERR?': '+esc(PERR.m):''}. Tap to retry.</div>`:''));
   if(!S.loaded&&!S.issues.length&&!S.err){$('#board').innerHTML='<div class="list"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';return;}
   if(desk()){
     const cls={'Open':'t-open','In Progress':'t-prog','Action Needed':'t-act','Done':'t-done','Cancelled':'t-can'};
-    $('#board').innerHTML='<div class="cols">'+ST.map(s=>`<div class="col"><div class="col-h ${cls[s]}"><span>${s}</span><span class="n">${g[s].length}</span></div><div class="col-b" data-drop="${s}">${cards(g[s].slice(0,60))||'<div class="empty" style="padding:14px 0">\u2014</div>'}</div></div>`).join('')+'</div>';
+    $('#board').innerHTML='<div class="cols">'+ST.map(s=>`<div class="col"><div class="col-h ${cls[s]}"><span>${s}</span><span class="n">${g[s].length}</span></div><div class="col-b" data-drop="${s}">${(s==='Done'||s==='Cancelled')?'':`<input class="in qin" data-s="${s}" placeholder="+ Add" maxlength="140" enterkeyhint="done" autocomplete="off">`}${cards(g[s].slice(0,60))||'<div class="empty" style="padding:14px 0">\u2014</div>'}</div></div>`).join('')+'</div>';
   }else{
     const a=g[S.tab];
     $('#board').innerHTML=`<div class="list">${cards(a.slice(0,80))||`<div class="empty">${S.tab==='Cancelled'?'No cancelled issues':'Nothing in '+S.tab+'.'}</div>`}${a.length>80?`<div class="empty">Showing 80 of ${a.length}. Use search to narrow down.</div>`:''}</div>`;
@@ -794,7 +886,7 @@ function evHtml(e){
 function drawDetailParts(){
   const i=cur();if(!i||!$('#dPhWrap'))return;
   const tile=p=>`<figure><img data-fid="${esc(p.id)}" alt="" data-act="lb" data-id="${esc(p.id)}"><figcaption>${esc(fdt(p.taken||p.up))}</figcaption></figure>`;
-  const up=k=>OUT.filter(o=>o.t==='photo'&&o.id===i.id&&(k==='proof'?o.kind==='proof':o.kind!=='proof')).map(()=>'<div class="up">uploading\u2026</div>').join('');
+  const up=k=>POUT.filter(o=>o.id===i.id&&(k==='proof'?o.kind==='proof':o.kind!=='proof')).map(o=>o.failed?'<div class="up" data-act="rph">failed<br>tap to retry</div>':'<div class="up">uploading\u2026</div>').join('');
   const iss=(i.ph||[]).filter(p=>p.k!=='proof'),prf=(i.ph||[]).filter(p=>p.k==='proof');
   $('#dPhWrap').innerHTML=`<div class="row" style="margin-top:14px"><label class="l" style="margin:0;flex:1">Photos (${iss.length})</label><button class="btn sec sm" data-act="dph" data-k="issue">+ Add</button></div><div class="thumbs">${iss.map(tile).join('')+up('issue')||'<span class="hint">None</span>'}</div>
    <div class="row" style="margin-top:12px"><label class="l" style="margin:0;flex:1">Resolution proof (${prf.length})</label><button class="btn sec sm" data-act="dph" data-k="proof">+ Add proof</button></div><div class="thumbs">${prf.map(tile).join('')+up('proof')||'<span class="hint">No proof yet</span>'}</div>`;
@@ -817,20 +909,20 @@ function saveDetail(){
   const i=cur();if(!i)return;const ch=collect(i),com=$('#dRem').value.trim();
   if(ch.st==='Cancelled'&&!com){toast('Add a comment explaining the cancellation','err');$('#dRem').focus();return;}
   if(!Object.keys(ch).length&&!com){toast('Nothing changed');return;}
-  if(ch.st==='Done'&&!(i.ph||[]).some(p=>p.k==='proof')&&!OUT.some(o=>o.t==='photo'&&o.id===i.id&&o.kind==='proof'))toast('Saved. Tip: add a proof photo to Done items');
+  if(ch.st==='Done'&&!(i.ph||[]).some(p=>p.k==='proof')&&!POUT.some(o=>o.id===i.id&&o.kind==='proof'))toast('Saved. Tip: add a proof photo to Done items');
   else toast('Saved');
   commit(i,ch,com,'');D.st=i.st;D.tags=[...i.tags];drawDetail();
 }
 function sendReply(){
-  const i=cur();if(!i)return;const t=$('#dRep').value.trim(),np=OUT.filter(o=>o.t==='photo'&&o.id===i.id&&o.kind==='reply').length;
+  const i=cur();if(!i)return;const t=$('#dRep').value.trim(),np=POUT.filter(o=>o.id===i.id&&o.kind==='reply').length;
   if(!t&&!np){toast('Write a reply or add a photo','err');return;}
   commit(i,{st:'In Progress'},t||'Shared follow-up photos','reply');D.st=i.st;drawDetail();toast('Reply sent');
 }
 function addDetailPhotos(kind){
   const id=D&&D.id;if(!id)return;
   pick(false,async files=>{
-    for(const f of files){try{const p=await prep(f),pid=uid();await blobPut(pid,p.b64);OUT.push({n:uid(),t:'photo',id,kind,pid,taken:p.taken});saveOut();drawDetailParts();}catch(e){toast(e.message,'err');}}
-    drain();
+    for(const f of files){try{const p=await prep(f),pid=uid();await blobPut(pid,p.b64);POUT.push({n:uid(),t:'photo',id,kind,pid,taken:p.taken});savePout();setSync();drawDetailParts();}catch(e){toast(e.message,'err');}}
+    drainPhotos();
   });
 }
 
@@ -966,9 +1058,10 @@ function askDelete(id){
 function doDelete(id){
   S.issues=S.issues.filter(x=>x.id!==id);
   if(S.vault){S.vault=S.vault.filter(x=>x.id!==id);LS.set('it2_vault',S.vault);}
-  OUT=OUT.filter(o=>{const mine=o.id===id||o.src===id;if(mine&&o!==INFLIGHT){if(o.t==='photo')blobDel(o.pid);return false;}return true;});
+  OUT=OUT.filter(o=>{const mine=o.id===id||o.src===id;if(mine&&o!==INFLIGHT)return false;return true;});
+  POUT=POUT.filter(o=>{if(o.id===id){blobDel(o.pid);return false;}return true;});
   OUT.push({n:uid(),t:'delete',id});
-  saveOut();persist();
+  saveOut();savePout();persist();
   if(D&&D.id===id){$('#detail').classList.add('hidden');$('#mail').classList.add('hidden');document.body.classList.remove('noscroll');D=null;}
   render();fillLists();if(S.view==='vault')renderVault();toast('Deleted '+id);drain();
 }
@@ -1001,8 +1094,9 @@ function lkMerge(oid,dir){
 }
 function doMerge(srcId,tgtId){
   S.issues=S.issues.filter(x=>x.id!==srcId);
+  POUT.forEach(o=>{if(o.id===srcId)o.id=tgtId;});   /* photos still waiting to upload follow the merge */
   OUT.push({n:uid(),t:'merge',id:tgtId,src:srcId});
-  saveOut();persist();
+  saveOut();savePout();persist();
   $('#mail').classList.add('hidden');
   if(D&&D.id===srcId)openDetail(tgtId);
   render();fillLists();toast('Merged into '+tgtId);drain();
@@ -1012,9 +1106,9 @@ function doMerge(srcId,tgtId){
 function openDiag(){
   const rm=!(window.google&&google.script&&google.script.run);
   const url=LS.get('it2_url','')||(window.APP_API&&window.APP_API.url)||'';
-  const err=OUT.length&&LASTERR?LASTERR.m:(S.err||''),when=LASTERR&&LASTERR.t&&OUT.length?new Date(LASTERR.t).toLocaleTimeString():'';
+  const pn=POUT.length,err=(OUT.length&&LASTERR?LASTERR.m:'')||(pn&&PERR?PERR.m:'')||S.err||'',when=LASTERR&&LASTERR.t&&OUT.length?new Date(LASTERR.t).toLocaleTimeString():'';
   $('#dlg').innerHTML=`<div class="sheet" style="max-width:440px;border-radius:20px"><div class="sh-h"><b>Sync details</b><button class="x" data-act="dlgno">✕</button></div><div class="sh-b">
-   <p style="margin:0 0 6px"><b>${OUT.length}</b> change(s) waiting to be saved to your sheet.</p>
+   <p style="margin:0 0 6px"><b>${OUT.length}</b> change(s) and <b>${pn}</b> photo(s) waiting to be saved to your sheet.</p>
    <div class="box" style="margin:6px 0;word-break:break-word">${err?'<b>Last problem:</b> '+esc(err)+(when?' <span class="hint">('+when+')</span>':''):'No problem recorded yet. Tap Test connection.'}</div>
    <div id="dgRes" class="hint" style="min-height:18px"></div>
    <div class="row" style="margin-top:10px"><button class="btn" data-act="diagretry" style="flex:1">Retry now</button><button class="btn sec" data-act="diagtest" style="flex:1">Test connection</button></div>
@@ -1024,15 +1118,8 @@ function openDiag(){
 }
 async function diagTest(){
   const r=$('#dgRes');if(!r)return;r.textContent='Testing...';
-  try{
-    const t0=Date.now();let x=null;
-    try{x=await run('api_info');}catch(e){if(!/Unknown action|not a function|No function|Script function not found/i.test(String(e.message||e)))throw e;await run('api_sync',S.ver);}
-    const sec=((Date.now()-t0)/1000).toFixed(1),ok='<span style="color:var(--emer)">OK</span>',bad=v=>'<span style="color:var(--rose)">'+esc(v)+'</span>';
-    let h='<span style="color:var(--emer);font-weight:700">Connected OK</span> ('+sec+'s). The PIN is accepted.';
-    if(x&&x.ss)h+='<br>Saving into sheet: <b>'+esc(x.ss)+'</b> · '+x.rows+' row(s) in its Issues tab'+(x.url?'<br><span style="word-break:break-all">'+esc(x.url)+'</span>':'')+'<br>Drive (photos): '+(/^ok/.test(x.drive)?ok+esc(x.drive.slice(2)):bad(x.drive))+' · Gmail: '+(x.gmail==='ok'?ok:bad(x.gmail));
-    else h+='<br>Update Code.gs and redeploy to also see which sheet and Drive access are in use.';
-    r.innerHTML=h;
-  }catch(e){r.innerHTML='<span style="color:var(--rose);font-weight:700">Failed:</span> '+esc(clean(e.message||e));}
+  try{const t0=Date.now();await run('api_sync',S.ver);r.innerHTML='<span style="color:var(--emer);font-weight:700">Connected OK</span> ('+((Date.now()-t0)/1000).toFixed(1)+'s). The sheet is reachable and the PIN is accepted.';}
+  catch(e){r.innerHTML='<span style="color:var(--rose);font-weight:700">Failed:</span> '+esc(clean(e.message||e));}
 }
 function diagSave(){
   const u=(($('#dgUrl')||{}).value||'').trim(),p=(($('#dgPin')||{}).value||'').trim();
@@ -1043,11 +1130,13 @@ function diagSave(){
 /* ================= events (one delegated handler) ================= */
 const H={
   view:t=>show(t.dataset.v),
-  retry:()=>{if(OUT.length||S.err)openDiag();else{retry();if(!S.loaded)sync(true);}},
+  retry:()=>{if(OUT.length||POUT.length||S.err)openDiag();else{retry();if(!S.loaded)sync(true);}},
+  rph:retryPhotos,
   diagretry:()=>{dlgClose();retry();toast('Retrying...');}, diagtest:diagTest, diagsave:diagSave,
   duewin:t=>{S.fDue=t.dataset.d;LS.set('it2_due',S.fDue);renderBoard();},
   contacts:()=>loadContacts(true),
   pull:pullMail,
+  qadd:()=>{const el=$('#qaT'),v=el.value;el.value='';if(v.trim()){quickCreate(v,qaStatus());el.focus();}},
   cam:()=>pick(true,addNew), gal:()=>pick(false,addNew),
   rmph:t=>{NP.splice(+t.dataset.i,1);drawSlots();},
   due:t=>{const n=+t.dataset.n;if(!n){$('#fDue').value='';return;}const d=new Date();d.setDate(d.getDate()+n);$('#fDue').value=ymd(d);},
@@ -1085,6 +1174,12 @@ document.addEventListener('click',e=>{
     const t=e.target.closest('[data-act]');if(!t)return;const f=H[t.dataset.act];if(f)f(t,e);
   }catch(err){console.error(err);toast('Something went wrong: '+(err&&err.message||err),'err');}
 });
+/* quick add: Enter in the top box, or in a column's "+ Add" box (the column decides the status) */
+$('#qaT').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const v=e.target.value;e.target.value='';if(v.trim())quickCreate(v,qaStatus());});
+$('#board').addEventListener('keydown',e=>{
+  const t=e.target;if(e.key!=='Enter'||!t.classList||!t.classList.contains('qin'))return;
+  e.preventDefault();const v=t.value;t.value='';if(v.trim())quickCreate(v,t.dataset.s);   /* cleared first so the redraw does not restore the old text */
+});
 $('#fAs').addEventListener('input',e=>{
   const v=e.target.value.trim(),known=S.cfg.people.some(p=>low(p.n)===low(v));
   $('#fPhoneWrap').classList.toggle('hidden',!v||known);
@@ -1106,8 +1201,13 @@ document.addEventListener('dragleave',e=>{const c=e.target.closest&&e.target.clo
 document.addEventListener('drop',e=>{const c=e.target.closest&&e.target.closest('[data-drop]');if(!c)return;e.preventDefault();c.classList.remove('over');if(dragId)changeStatus(dragId,c.dataset.drop);dragId=null;});
 matchMedia('(min-width:860px)').addEventListener('change',()=>{if(S.view==='board')renderBoard();});
 window.addEventListener('online',retry);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(OUT.length)retry();else if(Date.now()-S.lastSync>20000)sync();}});
-setInterval(()=>{if(document.hidden)return;if(OUT.length&&!draining){retry();}else if(Date.now()-S.lastSync>90000)sync();},20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(OUT.length||POUT.length)retry();else if(Date.now()-S.lastSync>20000)sync();}});
+setInterval(()=>{
+  if(document.hidden)return;
+  if(OUT.length&&!draining){retry();}
+  else if(POUT.some(o=>!o.failed)&&!pdraining){drainPhotos();}
+  else if(Date.now()-S.lastSync>90000)sync();
+},20000);
 window.addEventListener('error',e=>{console.error(e.error||e.message);});
 
 /* ================= start (cannot leave the page half-initialised) ================= */
@@ -1119,12 +1219,13 @@ catch(e){
   S.issues=[];S.cfg=DEF_CFG();S.ver=-1;S.loaded=false;
   try{boot();}catch(e2){toast('Start-up problem: '+(e2&&e2.message||e2),'err');}
 }
-sync();if(OUT.length)drain();
+saveOut();savePout();
+sync();if(OUT.length)drain();if(POUT.length)drainPhotos();
 })();
 </script>
 <script>
 (function(){var s=document.createElement('script');s.text=document.getElementById('appsrc').text;document.body.appendChild(s);})();
 </script>
-<script>if('serviceWorker' in navigator&&!(window.google&&google.script)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+<!--PWA_BODY-->
 </body>
 </html>
