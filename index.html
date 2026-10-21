@@ -211,6 +211,9 @@ td.n,th.n{text-align:right}
 .qa .btn{flex:none;padding:9px 16px}
 .qin{margin:0 0 8px;padding:6px 9px;border-style:dashed;background:transparent;font-size:13px}
 .thumbs .up[data-act]{color:var(--rose);border-color:var(--rose);cursor:pointer}
+.thumbs .pdft{width:78px;height:78px;border-radius:10px;border:1px solid var(--s200);background:var(--s50);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;color:var(--rose);text-align:center;overflow:hidden}
+.thumbs .pdft span{font-size:9.5px;color:var(--s600);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attl{display:inline-block;margin:4px 8px 0 0;font-size:12px;font-weight:700}
 @media(max-width:700px){
  body{font-size:15px}
  main{padding:10px 10px 110px}
@@ -249,10 +252,11 @@ window.addEventListener('error',function(e){
   <div class="logo">&#9638;</div><div class="ttl">Google Issue Tracker</div>
   <button id="syncBadge" class="sync hidden" data-act="retry"></button>
   <div class="tabs" id="tabs">
-    <button data-act="view" data-v="raise" class="on">+ Raise</button>
-    <button data-act="view" data-v="board">Board</button>
-    <button data-act="view" data-v="report">Report</button>
-    <button data-act="view" data-v="vault">Vault</button>
+    
+<button data-act="view" data-v="board" class="on">Board</button>
+<button data-act="view" data-v="report">Report</button>
+<button data-act="view" data-v="raise">+ New</button>
+<button data-act="view" data-v="vault">Vault</button>
   </div>
 </div></header>
 
@@ -584,6 +588,7 @@ async function pullMail(){
     if(r&&r.msg)toast(r.msg,'err');
     else if(r&&r.busy)toast('Still pulling, try again in a moment');
     else if(r&&r.count){S.tab='Open';await sync(true);toast(r.count+' mail issue(s) added or updated');}
+    if(r&&r.more)toast('More mails are waiting. Press Pull again.');
     else toast('No new mail');
   }catch(e){toast(clean(e.message||e),'err');}
   pulling=false;if(b){b.disabled=false;b.textContent='\u2709 Pull';}
@@ -872,20 +877,25 @@ function drawDetail(){
 }
 function evHtml(e){
   const msg=e.c?`<div class="msg">${esc(e.c)}</div>`:'';
+  const att=(e.att&&e.att.length)?'<div>'+e.att.map(a=>a.k==='pdf'
+    ?`<a class="attl" href="https://drive.google.com/file/d/${esc(a.id)}/view" target="_blank" rel="noopener">\u{1F4C4} ${esc(a.n||'PDF')}</a>`
+    :`<img data-fid="${esc(a.id)}" alt="" data-act="lb" data-id="${esc(a.id)}">`).join('')+'</div>':'';
   if(e.k==='create')return esc(e.a||'Issue raised');
-  if(e.k==='chg')return`${esc(e.f)}: ${e.o?esc(e.o)+' \u2192 ':''}<b>${esc(e.n)}</b>${e.c?`<div style="margin-top:3px;color:var(--s600)">${esc(e.c)}</div>`:''}`;
+  if(e.k==='chg')return `${esc(e.f)}: ${e.o?esc(e.o)+' \u2192 ':''}<b>${esc(e.n)}</b>${e.c?`<div style="margin-top:3px;color:var(--s600)">${esc(e.c)}</div>`:''}`;
   if(e.k==='note')return esc(e.c);
   if(e.k==='reply')return'<b>Reply:</b> '+esc(e.c);
   if(e.k==='photo')return'\u{1F4F7} '+esc(e.a)+(e.ph?'<div>'+e.ph.map(f=>`<img data-fid="${esc(f)}" alt="" data-act="lb" data-id="${esc(f)}">`).join('')+'</div>':'');
-  if(e.k==='email')return`\u2709 <b>${e.th?'Reply sent in Gmail thread':'Email sent'}</b>${e.to?' to '+esc(e.to):''}${e.s?'<div style="color:var(--s600)">Subject: '+esc(e.s)+'</div>':''}${msg}`;
-  if(e.k==='mailin')return e.o?`\u{1F4E4} <b>You wrote</b> (Gmail)${msg}`:`\u{1F4E5} <b>Mail received</b> from ${esc(e.by||'')}${msg}`;
-  if(e.k==='wa')return`\u{1F4AC} <b>WhatsApp message</b>${e.to?' to '+esc(e.to):' (contact chosen in WhatsApp)'}${msg}`;
-  if(e.k==='sheet')return`Edited in sheet: ${esc(e.f)}${e.n?' \u2192 <b>'+esc(e.n)+'</b>':''}`;
+  if(e.k==='email')return `\u2709 <b>${e.th?'Reply sent in Gmail thread':'Email sent'}</b>${e.to?' to '+esc(e.to):''}${e.s?'<div style="color:var(--s600)">Subject: '+esc(e.s)+'</div>':''}${msg}`;
+  if(e.k==='mailin')return e.o?`\u{1F4E4} <b>You wrote</b> (Gmail)${msg}${att}`:`\u{1F4E5} <b>Mail received</b> from ${esc(e.by||'')}${msg}${att}`;
+  if(e.k==='wa')return `\u{1F4AC} <b>WhatsApp message</b> ${e.to?'to '+esc(e.to):'(contact chosen in WhatsApp)'}${msg}`;
+  if(e.k==='sheet')return `Edited in sheet: ${esc(e.f)}${e.n?' \u2192 <b>'+esc(e.n)+'</b>':''}`;
   return esc(e.a||e.c||'');
 }
 function drawDetailParts(){
   const i=cur();if(!i||!$('#dPhWrap'))return;
-  const tile=p=>`<figure><img data-fid="${esc(p.id)}" alt="" data-act="lb" data-id="${esc(p.id)}"><figcaption>${esc(fdt(p.taken||p.up))}</figcaption></figure>`;
+  const tile=p=>p.k==='pdf'
+  ?`<figure><a class="pdft" href="https://drive.google.com/file/d/${esc(p.id)}/view" target="_blank" rel="noopener">\u{1F4C4}<span>${esc(p.name||'PDF')}</span></a><figcaption>${esc(fdt(p.taken||p.up))}</figcaption></figure>`
+  :`<figure><img data-fid="${esc(p.id)}" alt="" data-act="lb" data-id="${esc(p.id)}"><figcaption>${esc(fdt(p.taken||p.up))}</figcaption></figure>`;
   const up=k=>POUT.filter(o=>o.id===i.id&&(k==='proof'?o.kind==='proof':o.kind!=='proof')).map(o=>o.failed?'<div class="up" data-act="rph">failed<br>tap to retry</div>':'<div class="up">uploading\u2026</div>').join('');
   const iss=(i.ph||[]).filter(p=>p.k!=='proof'),prf=(i.ph||[]).filter(p=>p.k==='proof');
   $('#dPhWrap').innerHTML=`<div class="row" style="margin-top:14px"><label class="l" style="margin:0;flex:1">Photos (${iss.length})</label><button class="btn sec sm" data-act="dph" data-k="issue">+ Add</button></div><div class="thumbs">${iss.map(tile).join('')+up('issue')||'<span class="hint">None</span>'}</div>
@@ -1211,7 +1221,7 @@ setInterval(()=>{
 window.addEventListener('error',e=>{console.error(e.error||e.message);});
 
 /* ================= start (cannot leave the page half-initialised) ================= */
-function boot(){fillLists();defaultDue();drawSlots();setSync();show('raise');}
+function boot(){fillLists();defaultDue();drawSlots();setSync();show('board');}
 try{boot();}
 catch(e){
   console.error('boot failed, resetting local copy',e);
