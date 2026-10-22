@@ -231,6 +231,17 @@ td.n,th.n{text-align:right}
 @media(min-width:860px){
  .c-desc{font-size:14px}.c-th{width:48px;height:48px}.c-more{font-size:12px}.card{padding:10px 12px 8px}
 }
+/* patch 2: mail attachments, new-reply nudges, tags on cards */
+.attc{display:inline-flex;align-items:center;gap:6px;background:var(--s100);border:1px solid var(--s200);border-radius:10px;padding:3px 6px;margin:6px 6px 0 0;font-size:12px;max-width:100%}
+.attc img{width:26px;height:26px;border-radius:6px;object-fit:cover}
+.attc span{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attc button{width:18px;height:18px;border-radius:50%;background:var(--s200);font-size:10px}
+.newb{background:#2563eb;color:#fff;font-size:11px;font-weight:800;padding:1px 9px;border-radius:99px;animation:np 1.6s ease-in-out infinite}
+@keyframes np{50%{opacity:.55}}
+.newchip{margin-top:8px;background:#2563eb;border-color:#2563eb}
+.tabn{background:#2563eb;color:#fff;border-radius:99px;padding:0 6px;font-size:11px;margin-left:3px}
+.c-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tg{font-size:11px;font-weight:700;background:var(--b50);color:var(--bd);padding:1px 8px;border-radius:99px}
 
 </style>
 </head>
@@ -320,6 +331,7 @@ window.addEventListener('error',function(e){
 <datalist id="dlPpl"></datalist><datalist id="dlLoc"></datalist><datalist id="dlGrp"></datalist>
 <input type="file" id="file" accept="image/*" multiple class="hidden">
 <input type="file" id="cam" accept="image/*" capture="environment" class="hidden">
+<input type="file" id="mfile" accept="image/*,application/pdf" multiple class="hidden">
 
 <script type="text/plain" id="appsrc">
 (function(){
@@ -408,6 +420,13 @@ async function loadContacts(manual){
 let draining=false, pdraining=false, syncing=false, saveT=0, pulling=false, writeSeq=0;
 let LASTERR=LS.get('it2_lasterr',null), PERR=null, INFLIGHT=null;
 const mem=new Map();
+/* "New reply" tracking: a ticket is new when mail arrived (after Pull) that you have not opened yet. Kept per device. */
+let SEEN=LS.get('it2_seen',{});if(!SEEN||typeof SEEN!=='object')SEEN={};
+let SEEN_BASE=LS.get('it2_seenbase','');if(!SEEN_BASE){SEEN_BASE=new Date().toISOString();LS.set('it2_seenbase',SEEN_BASE);}
+function lastIn(i){const L=i.log||[];for(let k=L.length-1;k>=0;k--){const e=L[k];if(e&&e.k==='mailin'&&!e.o)return e.pa||e.t||'';}return '';}
+const isNew=i=>{const t=lastIn(i);return !!t&&t>(SEEN[i.id]||SEEN_BASE);};
+function markSeen(id){SEEN[id]=new Date().toISOString();LS.set('it2_seen',SEEN);}
+function newCount(){return S.issues.filter(i=>ACTIVE.includes(i.st)&&isNew(i)).length;}
 function persist(){clearTimeout(saveT);saveT=setTimeout(()=>LS.set('it2_cache',{issues:S.issues,cfg:S.cfg,ver:S.ver,me:S.me}),250);}
 function saveOut(){LS.set('it2_out',OUT);}
 function savePout(){LS.set('it2_pout',POUT);}
@@ -587,9 +606,8 @@ async function pullMail(){
     const r=await run('api_pullMail');
     if(r&&r.msg)toast(r.msg,'err');
     else if(r&&r.busy)toast('Still pulling, try again in a moment');
-    else if(r&&r.count){S.tab='Open';await sync(true);toast(r.count+' mail issue(s) added or updated');}
-    if(r&&r.more)toast('More mails are waiting. Press Pull again.');
-    else toast('No new mail');
+    else if(r&&r.count){await sync(true);const n=newCount();toast(n?n+' ticket(s) with new replies':r.count+' mail issue(s) added or updated');if(r.more)setTimeout(()=>toast('More mails are waiting. Press Pull again.'),2400);}
+    else toast('No new mail ('+((r&&r.checked)||0)+' labelled thread(s) checked)');
   }catch(e){toast(clean(e.message||e),'err');}
   pulling=false;if(b){b.disabled=false;b.textContent='\u2709 Pull';}
 }
@@ -767,6 +785,7 @@ function filtered(skipCat){
     if(S.fx==='over'&&!isOver(i))return false;
     if(S.fx==='stale'&&!(ACTIVE.includes(i.st)&&dAgo(i.upd)>=stale))return false;
     if(S.fx==='unas'&&!(ACTIVE.includes(i.st)&&!i.as))return false;
+    if(S.fx==='new'&&!isNew(i))return false;
     if(S.fGrp&&i.g!==S.fGrp)return false;
     if(win&&ACTIVE.includes(i.st)&&(!i.due||i.due>win))return false;
     if(q.length){const h=(i.g+' '+i.id+' '+i.d+' '+i.as+' '+i.cat+' '+i.loc+' '+i.tags.join(' ')+' '+shortBy(i.by)+' '+i.mf+' '+i.ms).toLowerCase();if(!q.every(w=>h.includes(w)))return false;}
@@ -782,9 +801,10 @@ function card(i){
   const od=isOver(i),np=(i.ph||[]).length+pendingPh(i.id),nx=NEXT[i.st],th=(i.ph||[]).find(p=>p.k!=='proof');
   const lines=String(i.d).split('\n'),title=lines[0],more=lines.slice(1).join(' ').trim();
   return`<div class="card p-${esc(String(i.pri).toLowerCase())}" data-act="open" data-id="${esc(i.id)}" draggable="true">
-  <div class="c-top"><span class="cid">${esc(i.id)}</span><span class="badge s-${ST_CLS[i.st]||'open'}">${esc(ST_SHORT[i.st]||i.st)}</span>${i.pri==='Urgent'||i.pri==='High'?`<span class="pri ${i.pri.toLowerCase()}">${i.pri}</span>`:''}${isPending(i.id)?'<span class="unsynced" title="Not saved to the sheet yet"></span>':''}<span class="sp"></span><button class="del" data-act="delcard" data-id="${esc(i.id)}" title="Delete" aria-label="Delete">\u{1F5D1}</button></div>
+  <div class="c-top"><span class="cid">${esc(i.id)}</span><span class="badge s-${ST_CLS[i.st]||'open'}">${esc(ST_SHORT[i.st]||i.st)}</span>${i.pri==='Urgent'||i.pri==='High'?`<span class="pri ${i.pri.toLowerCase()}">${i.pri}</span>`:''}${isPending(i.id)?'<span class="unsynced" title="Not saved to the sheet yet"></span>':''}${isNew(i)?'<span class="newb">\u25CF New reply</span>':''}<span class="sp"></span><button class="del" data-act="delcard" data-id="${esc(i.id)}" title="Delete" aria-label="Delete">\u{1F5D1}</button></div>
   <div class="c-body">${th?`<img class="c-th" loading="lazy" alt="" data-fid="${esc(th.id)}" data-sz="200">`:''}<div class="c-tx"><div class="c-desc">${esc(title)}</div>${more?`<div class="c-more">${esc(more)}</div>`:''}</div></div>
   <div class="c-meta"><span>${ICON[i.cat]||'\u{1F4CC}'} ${esc(i.cat)}</span><span>\u{1F464} ${esc(i.as||'Unassigned')}</span><span>${ago(i.raised)}</span>${i.th?'<span class="mailtag" title="'+esc(i.mf)+'">✉ Mail</span>':''}${np?`<span>\u{1F4F7} ${np}</span>`:''}</div>
+  ${i.tags.length?`<div class="c-tags">${i.tags.slice(0,3).map(t=>`<span class="tg">#${esc(t)}</span>`).join('')}${i.tags.length>3?`<span class="tg">+${i.tags.length-3}</span>`:''}</div>`:''}
   <div class="c-foot">${i.g?`<button class="gchip" data-act="fgrp" data-g="${esc(i.g)}">\u{1F4C1} ${esc(i.g)}</button>`:''}<span class="sp"></span>${i.due&&ACTIVE.includes(i.st)?`<span class="due${od?' over':''}">${od?'Overdue · ':'Due '}${fd(i.due)}</span>`:''}${nx?`<button class="nxb" data-act="next" data-id="${esc(i.id)}">${nx[1]} ${nx[2]}</button>`:''}</div></div>`;
 }
 /* cards sharing a Group collapse into one tappable group block per column; everything else stays a plain card */
@@ -815,8 +835,9 @@ function renderBoard0(){
   $('#bCats').innerHTML=`<button class="chip${!S.fCat?' on':''}" data-act="cat" data-c="">All<b>${act.length}</b></button>`+cats.map(c=>`<button class="chip${S.fCat===c?' on':''}" data-act="cat" data-c="${esc(c)}">${ICON[c]||'\u{1F4CC}'} ${esc(c)}<b>${cnt[c]||0}</b></button>`).join('');
   const dn=S.fDue==='c'?S.dueN:+S.fDue,nOpen=list.filter(i=>ACTIVE.includes(i.st)).length;
   $('#bDue').innerHTML=`<div class="cats" style="margin-top:8px;align-items:center"><button class="chip${S.fDue==='all'?' on':''}" data-act="duewin" data-d="all">All tasks</button><button class="chip${S.fDue==='7'?' on':''}" data-act="duewin" data-d="7">Next 7 days</button><button class="chip${S.fDue==='15'?' on':''}" data-act="duewin" data-d="15">15 days</button><button class="chip${S.fDue==='30'?' on':''}" data-act="duewin" data-d="30">30 days</button><button class="chip${S.fDue==='c'?' on':''}" data-act="duewin" data-d="c">Custom</button>${S.fDue==='c'?`<input id="dueN" class="dueN" type="number" inputmode="numeric" min="1" max="365" value="${S.dueN}" aria-label="Custom number of days"><span class="hint" style="flex:none">days</span>`:''}</div>`+(S.fDue==='all'?'':`<div class="dueH">Showing ${nOpen} open task(s) due within ${dn} day(s), overdue included. Tasks with no due date appear under All tasks.</div>`);
-  const fxl={over:'Overdue only',stale:'No recent update',unas:'Unassigned'};
-  $('#bFx').innerHTML=S.fx?`<span class="fx">${fxl[S.fx]}<button data-act="clrfx">\u2715</button></span>`:'';
+  const fxl={over:'Overdue only',stale:'No recent update',unas:'Unassigned',new:'New replies'};
+  const nn=newCount();
+  $('#bFx').innerHTML=S.fx?`<span class="fx">${fxl[S.fx]}<button data-act="clrfx">\u2715</button></span>`:(nn?`<button class="chip on newchip" data-act="newfx">\u25CF ${nn} new repl${nn>1?'ies':'y'} \u00b7 show</button>`:'');
   /* tell the user what a quick-added task will inherit from the current filters */
   const qd=qaDefaults(qaStatus());
   $('#qaHint').textContent='New task gets: '+(ICON[qd.cat]||'\u{1F4CC}')+' '+qd.cat+' \u00b7 '+(qd.as||'Unassigned')+(qd.g?' \u00b7 \u{1F4C1} '+qd.g:'')+' \u00b7 due '+fd(qd.due)+(qd.st!=='Open'?' \u00b7 '+qd.st:'')+'. Edit it afterwards if needed.';
@@ -840,10 +861,11 @@ const cur=()=>D&&S.issues.find(i=>i.id===D.id);
 function openDetail(id,preset){
   const i=S.issues.find(x=>x.id===id);if(!i)return;
   D={id,st:preset||i.st,tags:[...i.tags]};
+  markSeen(id);
   $('#detail').classList.remove('hidden');document.body.classList.add('noscroll');drawDetail();
   if(preset==='Cancelled')setTimeout(()=>{const r=$('#dRem');r&&r.focus();},50);
 }
-function closeDetail(){$('#detail').classList.add('hidden');$('#mail').classList.add('hidden');document.body.classList.remove('noscroll');D=null;render();}
+function closeDetail(){if(D)markSeen(D.id);$('#detail').classList.add('hidden');$('#mail').classList.add('hidden');document.body.classList.remove('noscroll');D=null;render();}
 function waDigits(ph){let d=String(ph||'').replace(/\D/g,'').replace(/^0+/,'');if(d.length===10)d=(S.cfg.set.CountryCode||'91')+d;return d;}
 function waPhone(name){const p=findPerson(name);return p&&p.ph?waDigits(p.ph):'';}
 const waHref=(digits,text)=>'https://wa.me/'+digits+'?text='+encodeURIComponent(text);
@@ -885,7 +907,7 @@ function evHtml(e){
   if(e.k==='note')return esc(e.c);
   if(e.k==='reply')return'<b>Reply:</b> '+esc(e.c);
   if(e.k==='photo')return'\u{1F4F7} '+esc(e.a)+(e.ph?'<div>'+e.ph.map(f=>`<img data-fid="${esc(f)}" alt="" data-act="lb" data-id="${esc(f)}">`).join('')+'</div>':'');
-  if(e.k==='email')return `\u2709 <b>${e.th?'Reply sent in Gmail thread':'Email sent'}</b>${e.to?' to '+esc(e.to):''}${e.s?'<div style="color:var(--s600)">Subject: '+esc(e.s)+'</div>':''}${msg}`;
+  if(e.k==='email')return `\u2709 <b>${e.th?'Reply sent in Gmail thread':'Email sent'}</b>${e.to?' to '+esc(e.to):''}${e.s?'<div style="color:var(--s600)">Subject: '+esc(e.s)+'</div>':''}${msg}${att}`;
   if(e.k==='mailin')return e.o?`\u{1F4E4} <b>You wrote</b> (Gmail)${msg}${att}`:`\u{1F4E5} <b>Mail received</b> from ${esc(e.by||'')}${msg}${att}`;
   if(e.k==='wa')return `\u{1F4AC} <b>WhatsApp message</b> ${e.to?'to '+esc(e.to):'(contact chosen in WhatsApp)'}${msg}`;
   if(e.k==='sheet')return `Edited in sheet: ${esc(e.f)}${e.n?' \u2192 <b>'+esc(e.n)+'</b>':''}`;
@@ -947,16 +969,47 @@ function mailText(i,withId){
     body:'Hello'+(i.as?' '+i.as:'')+',\n\nRegarding '+(withId?i.id+' ('+quoted+')':quoted)+', current status: '+i.st+'.'+(i.due?'\nDue: '+fd(i.due)+'.':'')+'\n\nThanks'
   };
 }
+let MA=[];   // files attached to the email being written
+const readB64=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',').pop());r.onerror=()=>no(new Error('Could not read '+f.name));r.readAsDataURL(f);});
+async function prepMail(file){   // screenshots/photos: larger and sharper than the ticket photos, white background for transparent PNGs
+  const url=URL.createObjectURL(file);
+  const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>no(new Error('Could not read that image'));i.src=url;});
+  const k=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight)),w=Math.round(img.naturalWidth*k),h=Math.round(img.naturalHeight*k);
+  const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);URL.revokeObjectURL(url);
+  const data=c.toDataURL('image/jpeg',0.82);return{b64:data.split(',')[1],prev:data};
+}
+function drawMA(){
+  const w=$('#mAtt');if(!w)return;
+  w.innerHTML=MA.map((a,i)=>`<span class="attc">${a.prev?`<img src="${a.prev}" alt="">`:'\u{1F4C4}'}<span>${esc(a.name)}</span><button data-act="mrm" data-i="${i}" aria-label="Remove">\u2715</button></span>`).join('');
+}
+async function addMailFiles(files){
+  for(const f of files){
+    if(MA.length>=8){toast('Maximum 8 attachments','err');break;}
+    try{
+      if(/^image\//i.test(f.type)){
+        const p=await prepMail(f),nm=(!f.name||/^image\.\w+$/i.test(f.name))?'screenshot_'+uid():f.name.replace(/\.[^.]+$/,'');
+        MA.push({name:nm+'.jpg',type:'image/jpeg',b64:p.b64,prev:p.prev});
+      }else if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
+        if(f.size>8*1024*1024){toast(f.name+' is over 8 MB','err');continue;}
+        MA.push({name:f.name,type:'application/pdf',b64:await readB64(f),prev:''});
+      }else toast((f.name||'That file')+': only photos and PDFs can be attached','err');
+    }catch(e){toast(e.message||'Could not read the file','err');}
+    drawMA();
+  }
+}
 function openMail(){
   const i=cur();if(!i)return;const p=findPerson(i.as);
   const th=!!i.th,t=mailText(i,false);
   const to=th?(i.mf||''):((p&&p.em)||S.cfg.set.DefaultEmail||(String(i.by).includes('@')?i.by:''));
+  MA=[];
   $('#mail').innerHTML=`<div class="sheet" style="max-width:480px"><div class="sh-h"><b>${th?'Reply in thread':'Email'} \u00b7 ${esc(i.id)}</b><button class="x" data-act="mclose">\u2715</button></div><div class="sh-b">
    <label class="l">${th?'Reply to (add another address to CC them)':'To'}</label><input id="mTo" class="in" type="email" value="${esc(to)}" placeholder="name@example.com">
    <label class="l">Subject</label><input id="mSub" class="in" value="${esc(t.sub)}"${th?' disabled':''}>
    <label class="l">Message</label><textarea id="mMsg" class="in" rows="6">${esc(t.body)}</textarea>
+   <div class="row" style="margin-top:8px"><button class="btn sec sm" data-act="mattach">\u{1F4CE} Attach photo / PDF</button><span class="hint">You can also paste a screenshot into the message box</span></div>
+   <div id="mAtt"></div>
    ${th?'':'<label class="hint" style="display:flex;gap:6px;align-items:center;margin-top:8px"><input type="checkbox" id="mId"> Include ticket ID in subject &amp; message</label>'}
-   <p class="hint" style="margin:6px 0 0">${th?'Goes into the same Gmail conversation as a reply. A copy is saved in the issue timeline.':'Sent from your Google account. The email is saved in the issue timeline.'}</p>
+   <p class="hint" style="margin:6px 0 0">${th?'Goes into the same Gmail conversation as a reply. A copy is saved in the issue timeline.':'Sent from your Gmail and linked to this ticket: their replies come back here when you press Pull.'}</p>
    <button class="btn full" data-act="msend" id="mBtn" style="margin-top:14px">${th?'Send reply in thread':'Send email'}</button></div></div>`;
   const mi=$('#mId');
   if(mi)mi.addEventListener('change',()=>{const o=mailText(i,!mi.checked),n=mailText(i,mi.checked);
@@ -965,10 +1018,13 @@ function openMail(){
 }
 async function sendMail(){
   const i=cur();if(!i)return;const b=$('#mBtn'),lbl=b.textContent;b.disabled=true;b.textContent='Sending\u2026';
-  try{const r=await run('api_sendEmail',i.id,$('#mTo').value,$('#mSub').value,$('#mMsg').value,uid());
+  try{
+    const files=MA.map(a=>({name:a.name,type:a.type,b64:a.b64}));
+    const r=await run('api_sendEmail',i.id,$('#mTo').value,$('#mSub').value,$('#mMsg').value,uid(),files);
     if(r&&r.issue){const x=S.issues.findIndex(q=>q.id===i.id);if(x>=0&&!isPending(i.id))S.issues[x]=fixIssue(r.issue);S.ver=-1;persist();}
-    $('#mail').classList.add('hidden');toast(i.th?'Reply sent in thread and saved to timeline':'Email sent and saved to timeline');drawDetailParts();}
-  catch(e){toast(clean(e.message),'err');b.disabled=false;b.textContent=lbl;}
+    MA=[];$('#mail').classList.add('hidden');
+    toast((files.length?files.length+' attachment(s) sent. ':'')+(i.th?'Reply sent in thread and saved to timeline':'Email sent and saved to timeline'));drawDetailParts();
+  }catch(e){toast(clean(e.message),'err');b.disabled=false;b.textContent=lbl;}
 }
 
 /* ---- WhatsApp (free): opens a pre-filled draft in WhatsApp; the message is saved to the timeline.
@@ -1037,6 +1093,9 @@ async function loadVault(){
 
 /* ================= views ================= */
 function render(){
+  const n=newCount(),tb=$('#tabs [data-v="board"]');
+  if(tb)tb.innerHTML='Board'+(n?' <b class="tabn">'+n+'</b>':'');
+  try{if(navigator.setAppBadge){if(n)navigator.setAppBadge(n);else navigator.clearAppBadge();}}catch(e){}
   if(S.view==='board')renderBoard();else if(S.view==='report')renderReport();
   if(D)drawDetailParts();
 }
@@ -1155,6 +1214,7 @@ const H={
   tab:t=>{S.tab=t.dataset.s;renderBoard();},
   cat:t=>{S.fCat=(S.fCat===t.dataset.c)?'':t.dataset.c;renderBoard();},
   clrfx:()=>{S.fx='';renderBoard();},
+  newfx:()=>{S.fx='new';S.fDue='all';LS.set('it2_due','all');const f=ST.find(s=>S.issues.some(i=>i.st===s&&isNew(i)));if(f)S.tab=f;renderBoard();},
   open:t=>openDetail(t.dataset.id),
   next:(t,e)=>{e.stopPropagation();const i=S.issues.find(x=>x.id===t.dataset.id);if(i&&NEXT[i.st])changeStatus(i.id,NEXT[i.st][0]);},
   close:closeDetail,
@@ -1162,6 +1222,7 @@ const H={
   dsave:saveDetail, reply:sendReply, dph:t=>addDetailPhotos(t.dataset.k),
   lb:t=>lightbox(t.dataset.id),
   mail:openMail, mclose:()=>$('#mail').classList.add('hidden'), msend:sendMail,
+  mattach:()=>$('#mfile').click(), mrm:t=>{MA.splice(+t.dataset.i,1);drawMA();},
   wa:openWa, wsend:waSend,
   link:openLink, lkgrp:t=>lkGroup(t.dataset.id), lkmerge:t=>lkMerge(t.dataset.id,t.dataset.dir),
   grp:t=>{const g=t.dataset.g;if(S.openG[g])delete S.openG[g];else S.openG[g]=1;LS.set('it2_og',S.openG);renderBoard();},
@@ -1183,6 +1244,13 @@ document.addEventListener('click',e=>{
     if(e.target.classList&&e.target.classList.contains('ov')){if(e.target.id==='detail')closeDetail();else e.target.classList.add('hidden');return;}
     const t=e.target.closest('[data-act]');if(!t)return;const f=H[t.dataset.act];if(f)f(t,e);
   }catch(err){console.error(err);toast('Something went wrong: '+(err&&err.message||err),'err');}
+});
+/* mail attachments: file picker + pasted screenshots */
+$('#mfile').addEventListener('change',e=>{const fs=[...e.target.files];e.target.value='';if(fs.length)addMailFiles(fs);});
+document.addEventListener('paste',e=>{   // paste a screenshot into the email box
+  const m=$('#mail');if(!m||m.classList.contains('hidden')||!$('#mAtt'))return;
+  const fs=[...((e.clipboardData&&e.clipboardData.files)||[])];
+  if(fs.length){e.preventDefault();addMailFiles(fs);}
 });
 /* quick add: Enter in the top box, or in a column's "+ Add" box (the column decides the status) */
 $('#qaT').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const v=e.target.value;e.target.value='';if(v.trim())quickCreate(v,qaStatus());});
