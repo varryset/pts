@@ -87,6 +87,7 @@ textarea.in{resize:vertical}
 .t-act{color:#9f1239}.t-act .n{background:#ffe4e6}
 .t-done{color:#065f46}.t-done .n{background:#d1fae5}
 .t-can{color:var(--s600)}.t-can .n{background:var(--s200)}
+.t-gen{color:var(--s700)}.t-gen .n{background:var(--s200)}
 
 .card{position:relative;background:#fff;border:1px solid var(--s200);border-left:3px solid var(--s200);border-radius:12px;padding:8px 10px;cursor:pointer;box-shadow:0 1px 1px rgba(15,23,42,.04)}
 .card:active{background:var(--s50)}
@@ -242,7 +243,61 @@ td.n,th.n{text-align:right}
 .tabn{background:#2563eb;color:#fff;border-radius:99px;padding:0 6px;font-size:11px;margin-left:3px}
 .c-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
 .tg{font-size:11px;font-weight:700;background:var(--b50);color:var(--bd);padding:1px 8px;border-radius:99px}
-
+/* patch 3: tag chips on cards, value palette (group / filter / highlight / hide), drag-to-assign, timeline */
+button.tg{border:1px solid transparent;font-size:12px;padding:3px 10px;line-height:1.2}
+.tg.is-hl{background:#f59e0b;color:#fff}
+.tg.is-show{background:var(--b);color:#fff}
+.tg.is-hide{background:#ffe4e6;color:var(--rose);text-decoration:line-through}
+.card.hl{box-shadow:0 0 0 2.5px #f59e0b,0 6px 16px rgba(245,158,11,.3);background:#fffbeb}
+.card.dim{opacity:.38}
+.card.dtarget{outline:3px dashed var(--b);outline-offset:2px;transform:scale(1.02);opacity:1}
+.btn.tgl{background:var(--b);color:#fff;border-color:var(--b)}
+.ptool{margin-top:8px;background:#fff;border:1px solid var(--s200);border-radius:14px;padding:10px}
+.seg{display:flex;background:var(--s100);border:1px solid var(--s200);border-radius:12px;padding:3px;gap:2px}
+.seg button{flex:1;padding:9px 4px;border-radius:9px;font-size:13px;font-weight:700;color:var(--s600);white-space:nowrap}
+.seg button.on.hl{background:#f59e0b;color:#fff}
+.seg button.on.show{background:var(--b);color:#fff}
+.seg button.on.hide{background:var(--rose);color:#fff}
+.ptool .cats{margin:10px -10px 0;padding:0 10px 2px}
+.vals{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;max-height:190px;overflow-y:auto}
+.vchip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--s200);background:#fff;border-radius:99px;padding:7px 12px;font-size:13px;font-weight:700;color:var(--s700);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:grab;touch-action:manipulation}
+.vchip b{font-size:11.5px;opacity:.6}
+.vchip u{text-decoration:none;opacity:.6;padding:0 2px;font-size:11px}
+.vchip.is-hl{background:#fef3c7;border-color:#f59e0b;color:#92400e}
+.vchip.is-show{background:var(--b50);border-color:var(--b);color:var(--bd)}
+.vchip.is-hide{background:#fff1f2;border-color:var(--rose);color:var(--rose);text-decoration:line-through}
+.fxrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.fx2{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:4px 6px 4px 11px;font-size:12px;font-weight:700}
+.fx2.hl{background:#fef3c7;color:#92400e}.fx2.show{background:var(--b50);color:var(--bd)}.fx2.hide{background:#ffe4e6;color:var(--rose)}
+.fx2 button{width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.1);font-size:10px}
+.vghost{position:fixed;z-index:100;pointer-events:none;transform:translate(-50%,-50%);background:var(--b);color:#fff;font-weight:800;font-size:14px;padding:9px 16px;border-radius:99px;box-shadow:0 10px 26px rgba(79,70,229,.45);white-space:nowrap}
+body.dragging{-webkit-user-select:none;user-select:none;overscroll-behavior:contain}
+.gtog{display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;padding:11px 14px;background:#fff;border:1px solid var(--s200);border-radius:14px;font-weight:800;font-size:14px;color:var(--s800);text-align:left}
+.gtog span{flex:1}
+.gtog b{background:var(--b);color:#fff;border-radius:99px;padding:1px 9px;font-size:12px}
+.gtog i{font-style:normal;color:var(--s500)}
+.gbox{background:#fff;border:1px solid var(--s200);border-radius:14px;margin-top:6px;overflow:hidden}
+.gscroll{overflow-x:auto;overflow-y:auto;max-height:62vh;-webkit-overflow-scrolling:touch}
+.grow{display:flex;height:40px;border-bottom:1px solid var(--s100)}
+.glab{position:sticky;left:0;z-index:3;flex:none;width:118px;background:#fff;border-right:1px solid var(--s200);padding:4px 8px;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
+.glab b{font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.glab span{font-size:10.5px;color:var(--s500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.ghd{height:auto;background:var(--s50);position:sticky;top:0;z-index:5}
+.ghd .glab{background:var(--s50)}
+.gcol{flex:none}
+.gmr,.gdr{display:flex}
+.gm{font-size:10.5px;font-weight:800;color:var(--s600);text-transform:uppercase;padding:3px 6px;border-right:1px solid var(--s200);overflow:hidden;white-space:nowrap}
+.gd{flex:none;text-align:center;font-size:11px;font-weight:700;color:var(--s500);padding:3px 0}
+.gd.we{background:var(--s100)}
+.gd.now{background:var(--rose);color:#fff;border-radius:6px}
+.gtrack{position:relative;flex:none;background-image:linear-gradient(to right,var(--s100) 1px,transparent 1px)}
+.gnow{position:absolute;top:0;bottom:0;width:2px;background:var(--rose);opacity:.55;z-index:1}
+.gbar{position:absolute;top:8px;height:24px;border-radius:8px;display:flex;align-items:center;padding:0 7px;cursor:pointer;z-index:2;color:#fff;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.gbar em{font-style:normal}
+.gbar.k-open{background:#f59e0b}.gbar.k-prog{background:#0ea5e9}.gbar.k-act{background:#f43f5e}
+.gbar.over{background:repeating-linear-gradient(135deg,var(--rose),var(--rose) 6px,#be123c 6px,#be123c 12px)}
+.gbar.urgent{box-shadow:0 0 0 2px #0f172a}
+.gleg{font-size:11px;color:var(--s500);padding:8px 10px}
 </style>
 </head>
 <body>
@@ -313,9 +368,11 @@ window.addEventListener('error',function(e){
     <div id="qaHint" class="dueH"></div>
     <div id="bDue"></div>
     <div class="cats" id="bCats"></div>
+    <div id="bTools"></div>
     <div id="bFx"></div>
     <div class="pills" id="bPills"></div>
     <div id="bBanner"></div>
+    <div id="bGantt"></div>
     <div id="board"></div>
   </section>
 
@@ -379,7 +436,11 @@ function fixCfg(c){
 function fixIssue(i){
   i=i&&typeof i==='object'?i:{};
   ['id','raised','by','cat','as','asOn','pri','due','d','loc','gps','st','rem','upd','closed','arch','th','mf','ms','g'].forEach(k=>{if(i[k]==null)i[k]='';else if(typeof i[k]!=='string')i[k]=String(i[k]);});
-  if(!Array.isArray(i.tags))i.tags=[];if(!Array.isArray(i.ph))i.ph=[];if(!Array.isArray(i.log))i.log=[];
+  /* tags may arrive as an array or as the raw "a, b, c" text of the TAGS column */
+  if(typeof i.tags==='string')i.tags=i.tags.split(/[,;\n]/).map(t=>t.trim().replace(/^#+/,'')).filter(Boolean);
+  else if(Array.isArray(i.tags))i.tags=i.tags.map(t=>String(t).trim().replace(/^#+/,'')).filter(Boolean);
+  else i.tags=[];
+  if(!Array.isArray(i.ph))i.ph=[];if(!Array.isArray(i.log))i.log=[];
   if(!i.st)i.st='Open';if(!i.pri)i.pri='Medium';if(!i.cat)i.cat='Others';
   return i;
 }
@@ -395,6 +456,26 @@ const S={
   fDue:(['all','7','15','30','c'].includes(LS.get('it2_due','all'))?LS.get('it2_due','all'):'all'), dueN:Math.min(365,Math.max(1,Math.round(+LS.get('it2_dueN',45))||45)),
   loaded:!!cache, err:'', lastSync:0, vault:LS.get('it2_vault',null), vaultBusy:false
 };
+/* ---- board grouping, value palette and filters (kept on this device) ----
+   gb  = what the board columns are grouped by      pf = which field the Values palette shows
+   mode= what tapping a value does: hl (highlight) | show (only these) | hide (filter these out, until cleared)
+   flt = the active value filters [{f,v,m}] */
+const FIELDS=[['st','Status'],['as','Owner'],['pri','Priority'],['cat','Category'],['tags','Tags'],['loc','Location'],['g','Group']];
+const FKEYS=FIELDS.map(a=>a[0]);
+const NONE='__none';
+const GFn=f=>(FIELDS.find(a=>a[0]===f)||[f,f])[1];
+S.gb=FKEYS.includes(LS.get('it2_gb','st'))?LS.get('it2_gb','st'):'st';
+S.pf=FKEYS.includes(LS.get('it2_pf','tags'))?LS.get('it2_pf','tags'):'tags';
+S.mode=['hl','show','hide'].includes(LS.get('it2_mode','hl'))?LS.get('it2_mode','hl'):'hl';
+S.flt=LS.get('it2_flt',[]);if(!Array.isArray(S.flt))S.flt=[];
+S.flt=S.flt.filter(x=>x&&FKEYS.includes(x.f)&&['hl','show','hide'].includes(x.m)&&typeof x.v==='string');
+S.pOpen=LS.get('it2_popen',matchMedia('(min-width:860px)').matches)!==false;
+S.gOpen=!!LS.get('it2_gopen',false);S.gFresh=S.gOpen;S.gtab='';
+let HLL=[];
+let OWNP=LS.get('it2_ownpins',[]);if(!Array.isArray(OWNP))OWNP=[];OWNP=OWNP.map(String).filter(Boolean);
+const isPinned=v=>OWNP.some(p=>low(p)===low(v));
+const actCount=v=>S.issues.filter(i=>ACTIVE.includes(i.st)&&hasVal(i,'as',v)).length;
+const saveFlt=()=>LS.set('it2_flt',S.flt);
 /* Two independent queues (this is the key change):
    OUT  = issue changes (create / update / delete / merge / comm)
    POUT = photo uploads. A slow or failing photo can never block edits, and edits never wait behind a photo. */
@@ -749,8 +830,10 @@ async function submit(){
 /* ================= quick add (from the board) =================
    Type a title, press Enter. The new task takes whatever the board is currently filtered by
    (category, person, group, due window, status column) and can be edited afterwards by tapping the card
-   or the Edit button that appears in the confirmation. */
-function qaStatus(){return desk()?'Open':(ACTIVE.includes(S.tab)?S.tab:'Open');}
+   or the Edit button that appears in the confirmation. When the board is grouped by something other than
+   Status, the column you add it in decides that value (e.g. the Owner column assigns that owner). */
+function qaStatus(){if(S.gb!=='st')return 'Open';return desk()?'Open':(ACTIVE.includes(S.tab)?S.tab:'Open');}
+function qaExtra(){if(S.gb==='st'||desk())return null;const k=curKey(colKeys(filtered()));return k?{f:S.gb,v:k}:null;}
 function qaDefaults(status){
   const cat=S.fCat||$('#fCat').value||S.cfg.cats[0]||'Others';
   const as=S.fAs&&S.fAs!=='__none'?S.fAs:'';
@@ -759,12 +842,13 @@ function qaDefaults(status){
   const d=new Date();d.setDate(d.getDate()+n);
   return{cat,as,g:S.fGrp||'',due:ymd(d),st:status||'Open'};
 }
-function quickCreate(title,status){
+function quickCreate(title,status,ex){
   title=String(title||'').trim();if(!title)return null;
   const o=qaDefaults(status),now=new Date().toISOString();
-  const iss=fixIssue({id:newId(),raised:now,by:S.me,cat:o.cat,as:o.as,asOn:o.as?now:'',pri:'Medium',due:o.due,d:title,tags:[],loc:'',g:o.g,gps:'',
+  if(ex&&ex.f&&ex.f!=='st'){const xv=ex.v===NONE?'':String(ex.v||'');if(ex.f==='tags')o.tags=xv?[xv]:[];else o[ex.f]=xv;}
+  const iss=fixIssue({id:newId(),raised:now,by:S.me,cat:o.cat,as:o.as,asOn:o.as?now:'',pri:o.pri||'Medium',due:o.due,d:title,tags:o.tags||[],loc:o.loc||'',g:o.g,gps:'',
     st:'Open',rem:'',upd:now,closed:'',arch:'',ph:[],log:[{t:now,by:S.me,k:'create',a:'Issue raised'+(o.as?' - assigned to '+o.as:'')}]});
-  S.issues.unshift(iss);mirrorLists({as:o.as,loc:'',tags:[]});
+  S.issues.unshift(iss);mirrorLists({as:o.as,loc:o.loc||'',tags:o.tags||[]});
   OUT.push({n:uid(),t:'create',id:iss.id,issue:Object.assign({},iss,{phone:'',email:''})});
   if(o.st!=='Open'){applyLocal(iss,{st:o.st},'','');OUT.push({n:uid(),t:'update',id:iss.id,ch:{st:o.st},c:'',kind:''});}   /* the server always creates as Open */
   saveOut();persist();fillLists();render();drain();
@@ -776,8 +860,64 @@ function quickCreate(title,status){
 /* ================= board ================= */
 const desk=()=>matchMedia('(min-width:860px)').matches;
 const isOver=i=>ACTIVE.includes(i.st)&&i.due&&i.due<ymd(new Date());
+
+/* ---- field values: what each card has for Status / Owner / Priority / Category / Tags / Location / Group ---- */
+function valsOf(i,f){
+  if(f==='tags')return i.tags.length?i.tags:[''];
+  const v=f==='st'?i.st:f==='as'?i.as:f==='pri'?i.pri:f==='cat'?i.cat:f==='loc'?i.loc:i.g;
+  return [String(v==null?'':v)];
+}
+const vlab=v=>(v===''||v===NONE)?'\u2014 None \u2014':v;
+const hasVal=(i,f,v)=>valsOf(i,f).some(x=>low(x===''?NONE:x)===low(v));
+function paletteVals(f){
+  if(f==='st')return ST.slice();
+  if(f==='pri')return ['Urgent','High','Medium','Low'];
+  let b=[];
+  if(f==='cat')b=S.cfg.cats.slice();else if(f==='as')b=S.cfg.people.map(p=>p.n);else if(f==='tags')b=S.cfg.tags.slice();else if(f==='loc')b=S.cfg.locs.slice();
+  const seen=new Set(b.map(low));
+  S.issues.forEach(i=>valsOf(i,f).forEach(v=>{if(v&&!seen.has(low(v))){seen.add(low(v));b.push(v);}}));
+  if(f!=='cat')b.sort((x,y)=>x.localeCompare(y));
+  return b;
+}
+const countVal=(f,v)=>S.issues.filter(i=>hasVal(i,f,v)).length;
+function colKeys(list){
+  const f=S.gb;
+  if(f==='st')return ST.slice();
+  if(f==='pri')return ['Urgent','High','Medium','Low'];
+  const used=new Set();list.forEach(i=>valsOf(i,f).forEach(v=>used.add(v===''?NONE:v)));
+  const out=[];
+  paletteVals(f).forEach(v=>{if(used.has(v)){out.push(v);used.delete(v);}});
+  [...used].filter(v=>v!==NONE).sort().forEach(v=>out.push(v));
+  if(used.has(NONE))out.push(NONE);
+  return out;
+}
+function curKey(keys){return S.gb==='st'?S.tab:(keys.includes(S.gtab)?S.gtab:(keys[0]||''));}
+function toggleFlt(f,v,m){
+  const ix=S.flt.findIndex(x=>x.f===f&&low(x.v)===low(v));
+  if(ix>=0&&S.flt[ix].m===m)S.flt.splice(ix,1);
+  else if(ix>=0)S.flt[ix].m=m;
+  else S.flt.push({f,v,m});
+  saveFlt();renderBoard();
+}
+const fltMode=(f,v)=>{const x=S.flt.find(y=>y.f===f&&low(y.v)===low(v));return x?x.m:'';};
+/* set one field of a card from a value (drag a value onto a card, or drag a card into a column) */
+function applyVal(id,f,v){
+  const i=S.issues.find(x=>x.id===id);if(!i)return;
+  const val=v===NONE?'':v;
+  if(f==='st'){changeStatus(id,val||'Open');return;}
+  if(f==='tags'){
+    if(!val){toast('Open the card to remove tags');return;}
+    if(i.tags.some(t=>low(t)===low(val))){toast('Already tagged #'+val);return;}
+    commit(i,{tags:[...i.tags,val]},'','');toast('#'+val+' added to '+id);return;
+  }
+  if(String(i[f]||'')===val){toast('No change');return;}
+  commit(i,{[f]:val},'','');toast(GFn(f)+' \u2192 '+(val||'none')+' ('+id+')');
+}
+
 function filtered(skipCat){
   const q=S.q.toLowerCase().split(/\s+/).filter(Boolean),stale=+S.cfg.set.StaleDays||3;
+  const showBy={};S.flt.forEach(x=>{if(x.m==='show')(showBy[x.f]||(showBy[x.f]=[])).push(x.v);});
+  const hideL=S.flt.filter(x=>x.m==='hide'),showF=Object.keys(showBy);
   const win=S.fDue==='all'?'':ymd(new Date(Date.now()+(S.fDue==='c'?S.dueN:+S.fDue)*864e5));
   return S.issues.filter(i=>{
     if(!skipCat&&S.fCat&&i.cat!==S.fCat)return false;
@@ -787,6 +927,8 @@ function filtered(skipCat){
     if(S.fx==='unas'&&!(ACTIVE.includes(i.st)&&!i.as))return false;
     if(S.fx==='new'&&!isNew(i))return false;
     if(S.fGrp&&i.g!==S.fGrp)return false;
+    for(let k=0;k<showF.length;k++){const f=showF[k];if(!showBy[f].some(v=>hasVal(i,f,v)))return false;}
+    if(hideL.some(x=>hasVal(i,x.f,x.v)))return false;
     if(win&&ACTIVE.includes(i.st)&&(!i.due||i.due>win))return false;
     if(q.length){const h=(i.g+' '+i.id+' '+i.d+' '+i.as+' '+i.cat+' '+i.loc+' '+i.tags.join(' ')+' '+shortBy(i.by)+' '+i.mf+' '+i.ms).toLowerCase();if(!q.every(w=>h.includes(w)))return false;}
     return true;});
@@ -797,14 +939,15 @@ function sortCol(st,a){
   return a.sort((x,y)=>(PRI_RANK[y.pri]||0)-(PRI_RANK[x.pri]||0)||(x.due||'9999').localeCompare(y.due||'9999')||(y.raised||'').localeCompare(x.raised||''));
 }
 const NEXT={'Open':['In Progress','\u25B6','Start'],'In Progress':['Done','\u2713','Mark done']};
+const hlc=i=>HLL.length?(HLL.some(x=>hasVal(i,x.f,x.v))?' hl':' dim'):'';
 function card(i){
   const od=isOver(i),np=(i.ph||[]).length+pendingPh(i.id),nx=NEXT[i.st],th=(i.ph||[]).find(p=>p.k!=='proof');
   const lines=String(i.d).split('\n'),title=lines[0],more=lines.slice(1).join(' ').trim();
-  return`<div class="card p-${esc(String(i.pri).toLowerCase())}" data-act="open" data-id="${esc(i.id)}" draggable="true">
+  return`<div class="card p-${esc(String(i.pri).toLowerCase())}${hlc(i)}" data-act="open" data-id="${esc(i.id)}" draggable="true">
   <div class="c-top"><span class="cid">${esc(i.id)}</span><span class="badge s-${ST_CLS[i.st]||'open'}">${esc(ST_SHORT[i.st]||i.st)}</span>${i.pri==='Urgent'||i.pri==='High'?`<span class="pri ${i.pri.toLowerCase()}">${i.pri}</span>`:''}${isPending(i.id)?'<span class="unsynced" title="Not saved to the sheet yet"></span>':''}${isNew(i)?'<span class="newb">\u25CF New reply</span>':''}<span class="sp"></span><button class="del" data-act="delcard" data-id="${esc(i.id)}" title="Delete" aria-label="Delete">\u{1F5D1}</button></div>
   <div class="c-body">${th?`<img class="c-th" loading="lazy" alt="" data-fid="${esc(th.id)}" data-sz="200">`:''}<div class="c-tx"><div class="c-desc">${esc(title)}</div>${more?`<div class="c-more">${esc(more)}</div>`:''}</div></div>
   <div class="c-meta"><span>${ICON[i.cat]||'\u{1F4CC}'} ${esc(i.cat)}</span><span>\u{1F464} ${esc(i.as||'Unassigned')}</span><span>${ago(i.raised)}</span>${i.th?'<span class="mailtag" title="'+esc(i.mf)+'">✉ Mail</span>':''}${np?`<span>\u{1F4F7} ${np}</span>`:''}</div>
-  ${i.tags.length?`<div class="c-tags">${i.tags.slice(0,3).map(t=>`<span class="tg">#${esc(t)}</span>`).join('')}${i.tags.length>3?`<span class="tg">+${i.tags.length-3}</span>`:''}</div>`:''}
+  ${i.tags.length?`<div class="c-tags">${i.tags.slice(0,8).map(t=>{const m=fltMode('tags',t);return`<button class="tg${m?' is-'+m:''}" data-act="tagtap" data-t="${esc(t)}" title="Tap to ${S.mode==='hl'?'highlight':S.mode==='show'?'show only':'hide'} #${esc(t)}">#${esc(t)}</button>`;}).join('')}${i.tags.length>8?`<span class="tg">+${i.tags.length-8}</span>`:''}</div>`:''}
   <div class="c-foot">${i.g?`<button class="gchip" data-act="fgrp" data-g="${esc(i.g)}">\u{1F4C1} ${esc(i.g)}</button>`:''}<span class="sp"></span>${i.due&&ACTIVE.includes(i.st)?`<span class="due${od?' over':''}">${od?'Overdue · ':'Due '}${fd(i.due)}</span>`:''}${nx?`<button class="nxb" data-act="next" data-id="${esc(i.id)}">${nx[1]} ${nx[2]}</button>`:''}</div></div>`;
 }
 /* cards sharing a Group collapse into one tappable group block per column; everything else stays a plain card */
@@ -828,8 +971,70 @@ function renderBoard(){
   $$('#board .qin').forEach(x=>{if(kv[x.dataset.s]!=null)x.value=kv[x.dataset.s];if(kf!==null&&x.dataset.s===kf)x.focus({preventScroll:true});});
   try{hydrate($('#board'));}catch(e){}
 }
+
+/* ---- Values palette: group-by, mode (highlight / show / hide), field tabs, draggable value chips, active filters ---- */
+const FI={hl:'\u2728',show:'\u{1F441}',hide:'\u{1F6AB}'};
+function renderTools(){
+  const box=$('#bTools');if(!box)return;const f=S.pf;
+  let h='<div class="bar" style="margin-top:10px"><select id="gbSel" class="in" title="Group the board by" style="flex:1 1 140px;width:auto">'+FIELDS.map(a=>'<option value="'+a[0]+'"'+(S.gb===a[0]?' selected':'')+'>Group by: '+a[1]+'</option>').join('')+'</select><button class="btn sec'+(S.pOpen?' tgl':'')+'" data-act="ptog">\u{1F3F7} Values '+(S.pOpen?'\u25B4':'\u25BE')+'</button></div>';
+  if(S.pOpen){
+    const hint={hl:'Tap a value to highlight matching cards.',show:'Tap values to show only matching cards.',hide:'Tap a value to hide matching cards until you clear it.'}[S.mode];
+    let vs=paletteVals(f);if(['as','loc','g','tags'].includes(f))vs=vs.concat([NONE]);
+    /* Owner values: only people who have active cards, plus owners you added by hand (pinned) and any owner you are filtering by */
+    if(f==='as')vs=vs.filter(v=>actCount(v)>0||isPinned(v)||fltMode('as',v));
+    h+='<div class="ptool"><div class="seg">'+[['hl','\u2728 Highlight'],['show','\u{1F441} Show'],['hide','\u{1F6AB} Hide']].map(m=>'<button class="'+(S.mode===m[0]?'on '+m[0]:'')+'" data-act="mode" data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>'
+      +'<div class="hint" style="margin-top:6px">'+hint+'</div>'
+      +'<div class="cats">'+FIELDS.map(a=>'<button class="chip'+(S.pf===a[0]?' on':'')+'" data-act="pf" data-f="'+a[0]+'">'+a[1]+'</button>').join('')+'</div>'
+      +'<div class="vals">'+(vs.length?vs.map(v=>{const m=fltMode(f,v);return'<button class="vchip'+(m?' is-'+m:'')+'" data-act="vchip" data-f="'+f+'" data-v="'+esc(v)+'">'+esc(vlab(v))+'<b>'+(f==='as'?actCount(v):countVal(f,v))+'</b>'+(f==='as'&&actCount(v)===0&&isPinned(v)?'<u data-act="ownunpin" data-v="'+esc(v)+'" title="Remove">✕</u>':'')+'</button>';}).join(''):'<span class="hint">No values yet</span>')+'</div>'
+      +(f==='as'?'<div class="row" style="margin-top:10px"><input id="ownIn" class="in" list="dlPpl" placeholder="Add an owner name (or pick a contact)" autocomplete="off" enterkeyhint="done" style="flex:1"><button class="btn sm" data-act="ownadd">+ Add owner</button></div><div class="hint" style="margin-top:4px">Owners with no active cards are hidden here, unless you add them by hand.</div>':'')
+      +'<div class="hint" style="margin-top:8px">\u261D Press and hold a value, then drag it onto a card to set it (Tags adds the tag).</div></div>';
+  }
+  if(S.flt.length)h+='<div class="fxrow">'+S.flt.map((x,ix)=>'<span class="fx2 '+x.m+'">'+FI[x.m]+' '+esc(GFn(x.f))+': '+esc(vlab(x.v))+'<button data-act="fxdel" data-i="'+ix+'" aria-label="Remove">\u2715</button></span>').join('')+'<button class="btn sec sm" data-act="fxclear">Clear</button></div>';
+  box.innerHTML=h;
+}
+
+/* ---- collapsible timeline (Gantt): bar runs from the day the task was raised to its due date ---- */
+function renderGantt(){
+  const box=$('#bGantt');if(!box)return;
+  const base=filtered().filter(i=>ACTIVE.includes(i.st));
+  const list=base.filter(i=>i.due).sort((a,b)=>a.due.localeCompare(b.due)||(PRI_RANK[b.pri]||0)-(PRI_RANK[a.pri]||0));
+  const nod=base.length-list.length;
+  const head='<button class="gtog" data-act="gtog"><span>\u{1F4CA} Timeline by due date</span><b>'+list.length+'</b><i>'+(S.gOpen?'\u25B4':'\u25BE')+'</i></button>';
+  if(!S.gOpen){box.innerHTML=head;return;}
+  if(!list.length){box.innerHTML=head+'<div class="gbox"><div class="empty" style="padding:18px">No active tasks with a due date in the current view.'+(nod?' ('+nod+' without a due date)':'')+'</div></div>';return;}
+  const old=box.querySelector('.gscroll'),sl=old?old.scrollLeft:0,st0=old?old.scrollTop:0;
+  const D0=s=>{const a=String(s).split('-');return new Date(+a[0],a[1]-1,+a[2]);};
+  const today=D0(ymd(new Date())),DW=34,mn=-7;
+  const idx=s=>Math.round((D0(s)-today)/864e5);
+  let mx=Math.max(14,idx(list[list.length-1].due));mx=Math.min(mx,90);
+  const n=mx-mn+1,TW=n*DW;
+  const ms=[],days=[];let last='';
+  for(let k=0;k<n;k++){
+    const d=new Date(today.getFullYear(),today.getMonth(),today.getDate()+mn+k),lab=d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'});
+    if(lab!==last){ms.push({lab,c:1});last=lab;}else ms[ms.length-1].c++;
+    days.push('<span class="gd'+(d.getDay()%6===0?' we':'')+(k===-mn?' now':'')+'" style="width:'+DW+'px">'+d.getDate()+'</span>');
+  }
+  const shown=list.slice(0,80);
+  const rows=shown.map(i=>{
+    const di=idx(i.due),ri=i.raised?idx(ymd(new Date(i.raised))):di;
+    const e=Math.min(Math.max(di,mn),mx);let s=Math.max(Math.min(ri,di),mn);if(s>e)s=e;
+    const left=(s-mn)*DW+1,w=Math.max(26,(e-s+1)*DW-4),over=di<0;
+    return'<div class="grow"><div class="glab" data-act="open" data-id="'+esc(i.id)+'"><b>'+esc(String(i.d).split('\n')[0].slice(0,40))+'</b><span>'+esc(i.as||'Unassigned')+'</span></div>'
+      +'<div class="gtrack" style="width:'+TW+'px;background-size:'+DW+'px 100%"><i class="gnow" style="left:'+((-mn)*DW+DW/2-1)+'px"></i>'
+      +'<div class="gbar k-'+(ST_CLS[i.st]==='act'?'act':ST_CLS[i.st]==='prog'?'prog':'open')+(over?' over':'')+(i.pri==='Urgent'?' urgent':'')+'" data-act="open" data-id="'+esc(i.id)+'" style="left:'+left+'px;width:'+w+'px"><em>'+(over?'Overdue \u00b7 ':'')+esc(fd(i.due))+'</em></div></div></div>';
+  }).join('');
+  box.innerHTML=head+'<div class="gbox"><div class="gscroll"><div style="width:'+(118+TW)+'px"><div class="grow ghd"><div class="glab"></div><div class="gcol" style="width:'+TW+'px"><div class="gmr">'+ms.map(m=>'<span class="gm" style="width:'+(m.c*DW)+'px">'+esc(m.lab)+'</span>').join('')+'</div><div class="gdr">'+days.join('')+'</div></div></div>'+rows+'</div></div>'
+    +'<div class="gleg">Bars run from the day raised to the due date \u00b7 red stripes = overdue \u00b7 tap a bar or title to open it.'+(list.length>80?' Showing first 80.':'')+(nod?' '+nod+' task(s) have no due date.':'')+'</div></div>';
+  const sc=box.querySelector('.gscroll');
+  if(sc){if(S.gFresh){sc.scrollLeft=Math.max(0,(-mn-1)*DW);S.gFresh=false;}else{sc.scrollLeft=sl;sc.scrollTop=st0;}}
+}
+
 function renderBoard0(){
-  const list=filtered(),g={};ST.forEach(s=>g[s]=[]);list.forEach(i=>(g[i.st]||g.Open).push(i));ST.forEach(s=>sortCol(s,g[s]));
+  const list=filtered(),f=S.gb;
+  HLL=S.flt.filter(x=>x.m==='hl');
+  const keys=colKeys(list),g={};keys.forEach(k=>g[k]=[]);
+  list.forEach(i=>valsOf(i,f).forEach(v=>{let k=v===''?NONE:v;if(!g[k]){if(f==='st')k='Open';else{g[k]=[];keys.push(k);}}g[k].push(i);}));
+  keys.forEach(k=>sortCol(f==='st'?k:'x',g[k]));
   const act=filtered(true).filter(i=>ACTIVE.includes(i.st)),cnt={};act.forEach(i=>cnt[i.cat]=(cnt[i.cat]||0)+1);
   const cats=S.cfg.cats.concat(Object.keys(cnt).filter(c=>!S.cfg.cats.includes(c)));
   $('#bCats').innerHTML=`<button class="chip${!S.fCat?' on':''}" data-act="cat" data-c="">All<b>${act.length}</b></button>`+cats.map(c=>`<button class="chip${S.fCat===c?' on':''}" data-act="cat" data-c="${esc(c)}">${ICON[c]||'\u{1F4CC}'} ${esc(c)}<b>${cnt[c]||0}</b></button>`).join('');
@@ -841,17 +1046,21 @@ function renderBoard0(){
   /* tell the user what a quick-added task will inherit from the current filters */
   const qd=qaDefaults(qaStatus());
   $('#qaHint').textContent='New task gets: '+(ICON[qd.cat]||'\u{1F4CC}')+' '+qd.cat+' \u00b7 '+(qd.as||'Unassigned')+(qd.g?' \u00b7 \u{1F4C1} '+qd.g:'')+' \u00b7 due '+fd(qd.due)+(qd.st!=='Open'?' \u00b7 '+qd.st:'')+'. Edit it afterwards if needed.';
+  renderTools();
+  const tk=curKey(keys);
   $('#bPills').classList.toggle('hidden',desk());
-  $('#bPills').innerHTML=ST.map(s=>`<button class="pill${S.tab===s?' on':''}" data-act="tab" data-s="${s}">${ST_SHORT[s]}<b>${g[s].length}</b></button>`).join('');
+  $('#bPills').innerHTML=keys.map(k=>`<button class="pill${tk===k?' on':''}" data-act="tab" data-s="${esc(k)}">${esc(f==='st'?ST_SHORT[k]:vlab(k))}<b>${g[k].length}</b></button>`).join('');
   const stuckN=!draining&&OUT.some(o=>(o.tries||0)>=4),pf=POUT.filter(o=>o.failed).length;
   $('#bBanner').innerHTML=S.err&&!S.loaded?`<div class="banner" data-act="retry">Could not load from Google Sheets: ${esc(S.err)}. Tap for details.</div>`:(stuckN&&LASTERR?`<div class="banner" data-act="retry">${OUT.length} change(s) not saved: ${esc(LASTERR.m)} Tap for details.</div>`:(pf?`<div class="banner" data-act="rph">${pf} photo(s) not uploaded${PERR?': '+esc(PERR.m):''}. Tap to retry.</div>`:''));
+  renderGantt();
   if(!S.loaded&&!S.issues.length&&!S.err){$('#board').innerHTML='<div class="list"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';return;}
   if(desk()){
     const cls={'Open':'t-open','In Progress':'t-prog','Action Needed':'t-act','Done':'t-done','Cancelled':'t-can'};
-    $('#board').innerHTML='<div class="cols">'+ST.map(s=>`<div class="col"><div class="col-h ${cls[s]}"><span>${s}</span><span class="n">${g[s].length}</span></div><div class="col-b" data-drop="${s}">${(s==='Done'||s==='Cancelled')?'':`<input class="in qin" data-s="${s}" placeholder="+ Add" maxlength="140" enterkeyhint="done" autocomplete="off">`}${cards(g[s].slice(0,60))||'<div class="empty" style="padding:14px 0">\u2014</div>'}</div></div>`).join('')+'</div>';
+    const dstyle=f==='st'?'':` style="grid-template-columns:repeat(${Math.max(keys.length,1)},minmax(240px,1fr));overflow-x:auto"`;
+    $('#board').innerHTML=keys.length?`<div class="cols"${dstyle}>`+keys.map(k=>`<div class="col"><div class="col-h ${f==='st'?cls[k]:'t-gen'}"><span>${esc(f==='st'?k:vlab(k))}</span><span class="n">${g[k].length}</span></div><div class="col-b" data-drop="${esc(k)}">${(f==='st'&&(k==='Done'||k==='Cancelled'))?'':`<input class="in qin" data-s="${esc(k)}" placeholder="+ Add" maxlength="140" enterkeyhint="done" autocomplete="off">`}${cards(g[k].slice(0,60))||'<div class="empty" style="padding:14px 0">\u2014</div>'}</div></div>`).join('')+'</div>':'<div class="empty">Nothing to show with the current filters.</div>';
   }else{
-    const a=g[S.tab];
-    $('#board').innerHTML=`<div class="list">${cards(a.slice(0,80))||`<div class="empty">${S.tab==='Cancelled'?'No cancelled issues':'Nothing in '+S.tab+'.'}</div>`}${a.length>80?`<div class="empty">Showing 80 of ${a.length}. Use search to narrow down.</div>`:''}</div>`;
+    const a=g[tk]||[];
+    $('#board').innerHTML=`<div class="list">${cards(a.slice(0,80))||`<div class="empty">${f==='st'&&tk==='Cancelled'?'No cancelled issues':'Nothing here.'}</div>`}${a.length>80?`<div class="empty">Showing 80 of ${a.length}. Use search to narrow down.</div>`:''}</div>`;
   }
 }
 
@@ -1205,13 +1414,30 @@ const H={
   duewin:t=>{S.fDue=t.dataset.d;LS.set('it2_due',S.fDue);renderBoard();},
   contacts:()=>loadContacts(true),
   pull:pullMail,
-  qadd:()=>{const el=$('#qaT'),v=el.value;el.value='';if(v.trim()){quickCreate(v,qaStatus());el.focus();}},
+  qadd:()=>{const el=$('#qaT'),v=el.value;el.value='';if(v.trim()){quickCreate(v,qaStatus(),qaExtra());el.focus();}},
   cam:()=>pick(true,addNew), gal:()=>pick(false,addNew),
   rmph:t=>{NP.splice(+t.dataset.i,1);drawSlots();},
   due:t=>{const n=+t.dataset.n;if(!n){$('#fDue').value='';return;}const d=new Date();d.setDate(d.getDate()+n);$('#fDue').value=ymd(d);},
   tagsug:t=>{const a=parseTags($('#fTags').value),x=t.dataset.t;const i=a.indexOf(x);if(i>=0)a.splice(i,1);else a.push(x);$('#fTags').value=a.join(', ');},
   gps, submit,
-  tab:t=>{S.tab=t.dataset.s;renderBoard();},
+  tab:t=>{if(S.gb==='st')S.tab=t.dataset.s;else S.gtab=t.dataset.s;renderBoard();},
+  /* value palette, filters, timeline */
+  ptog:()=>{S.pOpen=!S.pOpen;LS.set('it2_popen',S.pOpen);renderBoard();},
+  mode:t=>{S.mode=t.dataset.m;LS.set('it2_mode',S.mode);renderBoard();},
+  pf:t=>{S.pf=t.dataset.f;LS.set('it2_pf',S.pf);renderBoard();},
+  ownadd:()=>{
+    const el=$('#ownIn'),n=((el&&el.value)||'').trim();if(!n){toast('Type an owner name first','err');return;}
+    const ct=findPerson(n);
+    if(!isPinned(n)){OWNP.push(n);LS.set('it2_ownpins',OWNP);}
+    mirrorLists({as:n,phone:ct?ct.ph||'':'',email:ct?ct.em||'':''});persist();fillLists();renderBoard();
+    toast(n+' added to the Owner values - drag it onto a card to assign');
+  },
+  ownunpin:(t,e)=>{e.stopPropagation();OWNP=OWNP.filter(p=>low(p)!==low(t.dataset.v));LS.set('it2_ownpins',OWNP);renderBoard();},
+  vchip:t=>{if(Date.now()<noClickUntil)return;toggleFlt(t.dataset.f,t.dataset.v,S.mode);},
+  tagtap:(t,e)=>{e.stopPropagation();toggleFlt('tags',t.dataset.t,S.mode);},
+  fxdel:t=>{S.flt.splice(+t.dataset.i,1);saveFlt();renderBoard();},
+  fxclear:()=>{S.flt=[];saveFlt();renderBoard();},
+  gtog:()=>{S.gOpen=!S.gOpen;S.gFresh=S.gOpen;LS.set('it2_gopen',S.gOpen);renderBoard();},
   cat:t=>{S.fCat=(S.fCat===t.dataset.c)?'':t.dataset.c;renderBoard();},
   clrfx:()=>{S.fx='';renderBoard();},
   newfx:()=>{S.fx='new';S.fDue='all';LS.set('it2_due','all');const f=ST.find(s=>S.issues.some(i=>i.st===s&&isNew(i)));if(f)S.tab=f;renderBoard();},
@@ -1232,7 +1458,7 @@ const H={
   vdel:t=>askDelete(t.dataset.id),
   dlgno:dlgClose, dlgyes:()=>{const f=DLG;dlgClose();if(f)f();},
   wanudge:t=>{const k=t.dataset.k;S.issues.filter(i=>ACTIVE.includes(i.st)&&(i.as||'__none')===k).slice(0,10).forEach(i=>logWa(i,waPhone(i.as),'Reminder about pending items sent from the Report ('+i.id+')'));toast('Logged in each issue timeline');},
-  rfx:t=>{S.fx=t.dataset.fx||'';S.fAs='';S.fCat='';S.q='';S.fGrp='';S.fDue='all';LS.set('it2_due','all');S.tab=t.dataset.tab||'Open';$('#bAs').value='';$('#bQ').value='';$('#bGrp').value='';show('board');},
+  rfx:t=>{S.fx=t.dataset.fx||'';S.fAs='';S.fCat='';S.q='';S.fGrp='';S.fDue='all';LS.set('it2_due','all');S.gb='st';LS.set('it2_gb','st');S.tab=t.dataset.tab||'Open';$('#bAs').value='';$('#bQ').value='';$('#bGrp').value='';show('board');},
   rperson:t=>{S.fAs=t.dataset.k;S.fx='';S.tab='Open';$('#bAs').value=S.fAs;show('board');},
   digest:async t=>{t.disabled=true;try{await run('api_sendDigest');toast('Digest emailed');}catch(e){toast(clean(e.message),'err');}t.disabled=false;},
   archive:async t=>{t.disabled=true;try{const r=await run('api_archive',+$('#vDays').value||0);toast(r.count+' item(s) archived');await sync(true);await loadVault();}catch(e){toast(clean(e.message),'err');}t.disabled=false;},
@@ -1252,12 +1478,15 @@ document.addEventListener('paste',e=>{   // paste a screenshot into the email bo
   const fs=[...((e.clipboardData&&e.clipboardData.files)||[])];
   if(fs.length){e.preventDefault();addMailFiles(fs);}
 });
-/* quick add: Enter in the top box, or in a column's "+ Add" box (the column decides the status) */
-$('#qaT').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const v=e.target.value;e.target.value='';if(v.trim())quickCreate(v,qaStatus());});
+/* quick add: Enter in the top box, or in a column's "+ Add" box (the column decides the status, or the grouped value) */
+$('#qaT').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();const v=e.target.value;e.target.value='';if(v.trim())quickCreate(v,qaStatus(),qaExtra());});
 $('#board').addEventListener('keydown',e=>{
   const t=e.target;if(e.key!=='Enter'||!t.classList||!t.classList.contains('qin'))return;
-  e.preventDefault();const v=t.value;t.value='';if(v.trim())quickCreate(v,t.dataset.s);   /* cleared first so the redraw does not restore the old text */
+  e.preventDefault();const v=t.value;t.value='';   /* cleared first so the redraw does not restore the old text */
+  if(v.trim()){if(S.gb==='st')quickCreate(v,t.dataset.s);else quickCreate(v,'Open',{f:S.gb,v:t.dataset.s});}
 });
+document.addEventListener('keydown',e=>{if(e.target&&e.target.id==='ownIn'&&e.key==='Enter'){e.preventDefault();H.ownadd();}});
+document.addEventListener('focusin',e=>{if(e.target&&e.target.id==='ownIn'&&!ctTried&&!CONTACTS.length)loadContacts(false);});
 $('#fAs').addEventListener('input',e=>{
   const v=e.target.value.trim(),known=S.cfg.people.some(p=>low(p.n)===low(v));
   $('#fPhoneWrap').classList.toggle('hidden',!v||known);
@@ -1272,11 +1501,56 @@ let qt;$('#bQ').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>
 $('#bAs').addEventListener('change',e=>{S.fAs=e.target.value;renderBoard();});
 $('#bGrp').addEventListener('change',e=>{S.fGrp=e.target.value;renderBoard();});
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='dueN'){let n=Math.round(+e.target.value);if(!(n>=1))n=1;if(n>365)n=365;S.dueN=n;LS.set('it2_dueN',n);renderBoard();}});
+/* group the board by any field; the Values palette follows the same field */
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='gbSel'){S.gb=FKEYS.includes(e.target.value)?e.target.value:'st';S.pf=S.gb;S.gtab='';LS.set('it2_gb',S.gb);LS.set('it2_pf',S.pf);renderBoard();}});
+/* desktop: drag a card into a column to set its value (Status columns change status, other groupings change that field) */
 let dragId=null;
 document.addEventListener('dragstart',e=>{const c=e.target.closest&&e.target.closest('.card');if(c){dragId=c.dataset.id;e.dataTransfer.setData('text/plain',dragId);}});
 document.addEventListener('dragover',e=>{const c=e.target.closest&&e.target.closest('[data-drop]');if(c){e.preventDefault();c.classList.add('over');}});
 document.addEventListener('dragleave',e=>{const c=e.target.closest&&e.target.closest('[data-drop]');if(c)c.classList.remove('over');});
-document.addEventListener('drop',e=>{const c=e.target.closest&&e.target.closest('[data-drop]');if(!c)return;e.preventDefault();c.classList.remove('over');if(dragId)changeStatus(dragId,c.dataset.drop);dragId=null;});
+document.addEventListener('drop',e=>{const c=e.target.closest&&e.target.closest('[data-drop]');if(!c)return;e.preventDefault();c.classList.remove('over');if(dragId){const k=c.dataset.drop;if(S.gb==='st')changeStatus(dragId,k);else applyVal(dragId,S.gb,k);}dragId=null;});
+
+/* ---- drag a value from the Values palette onto a card. Works with mouse (click and drag) and touch (press and hold ~0.3s, then drag).
+        Near the top/bottom edge of the screen the page scrolls by itself. ---- */
+let DR=null,ghost=null,dtEl=null,noClickUntil=0,asTm=0;
+function beginDrag(){
+  if(!DR||DR.on)return;DR.on=true;
+  const c=DR.el;ghost=document.createElement('div');ghost.className='vghost';ghost.textContent=(c.firstChild?c.firstChild.textContent:c.textContent)||'';document.body.appendChild(ghost);
+  document.body.classList.add('dragging');try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}
+  moveDrag(DR.x,DR.y);
+  asTm=setInterval(()=>{if(!DR||!DR.on)return;if(DR.y<90)scrollBy(0,-16);else if(DR.y>innerHeight-90)scrollBy(0,16);},30);
+}
+function moveDrag(x,y){
+  DR.x=x;DR.y=y;if(ghost){ghost.style.left=x+'px';ghost.style.top=(y-(DR.touch?60:20))+'px';}
+  const el=document.elementFromPoint(x,y),c=el&&el.closest?el.closest('.card'):null;
+  if(c!==dtEl){if(dtEl)dtEl.classList.remove('dtarget');dtEl=c;if(c)c.classList.add('dtarget');}
+}
+function endDrag(drop){
+  if(!DR)return;
+  const was=DR.on,f=DR.el.dataset.f,v=DR.el.dataset.v,tgt=dtEl;
+  clearTimeout(DR.tm);clearInterval(asTm);
+  if(ghost){ghost.remove();ghost=null;}if(dtEl)dtEl.classList.remove('dtarget');dtEl=null;
+  document.body.classList.remove('dragging');DR=null;
+  if(was){noClickUntil=Date.now()+450;if(drop){if(tgt)applyVal(tgt.dataset.id,f,v);else toast('Drop the value onto a card');}}
+}
+document.addEventListener('pointerdown',e=>{
+  const c=e.target.closest&&e.target.closest('.vchip');if(!c||DR)return;
+  DR={el:c,x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,on:false,touch:e.pointerType!=='mouse'};
+  if(DR.touch)DR.tm=setTimeout(beginDrag,320);
+});
+document.addEventListener('pointermove',e=>{
+  if(!DR)return;
+  if(DR.on){moveDrag(e.clientX,e.clientY);return;}
+  if(Math.hypot(e.clientX-DR.sx,e.clientY-DR.sy)>(DR.touch?10:5)){
+    if(DR.touch){clearTimeout(DR.tm);DR=null;}   /* the finger is scrolling, not dragging */
+    else{DR.x=e.clientX;DR.y=e.clientY;beginDrag();}
+  }
+});
+document.addEventListener('pointerup',()=>endDrag(true));
+document.addEventListener('pointercancel',()=>endDrag(false));
+document.addEventListener('touchmove',e=>{if(DR&&DR.on)e.preventDefault();},{passive:false});
+document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('.vchip'))e.preventDefault();});
+
 matchMedia('(min-width:860px)').addEventListener('change',()=>{if(S.view==='board')renderBoard();});
 window.addEventListener('online',retry);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(OUT.length||POUT.length)retry();else if(Date.now()-S.lastSync>20000)sync();}});
