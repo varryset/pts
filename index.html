@@ -298,6 +298,116 @@ body.dragging{-webkit-user-select:none;user-select:none;overscroll-behavior:cont
 .gbar.over{background:repeating-linear-gradient(135deg,var(--rose),var(--rose) 6px,#be123c 6px,#be123c 12px)}
 .gbar.urgent{box-shadow:0 0 0 2px #0f172a}
 .gleg{font-size:11px;color:var(--s500);padding:8px 10px}
+/* patch 4: compact cards, Matrix / List views, collapsible columns, Backlog  (paste just before </style>) */
+:root{--cw:158px}
+@media(max-width:700px){:root{--cw:124px}}
+
+/* ---- Backlog status colours ---- */
+.s-bak{background:var(--s200);color:var(--s700)}
+.t-bak{color:var(--s600)}.t-bak .n{background:var(--s200)}
+.stp{grid-template-columns:repeat(5,1fr)}
+.stp button{font-size:11.5px;padding:10px 1px}
+.stp button.on.s-bak{border-color:var(--s500);background:var(--s200);color:var(--s800)}
+
+/* ---- compact card (title only) ---- */
+.card.cp{padding:6px 8px 5px;border-left-width:4px;border-radius:9px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.cp-t{font-size:13px;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.cp-m{display:flex;align-items:center;gap:6px;margin-top:4px;min-height:22px;font-size:11.5px;color:var(--s500)}
+.cp-m .sp{flex:1}
+.cpo{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cpo.mute{opacity:.5}
+.cpd{font-weight:800;font-size:11px;padding:0 6px;border-radius:99px;background:var(--s100);color:var(--s600);white-space:nowrap}
+.cpd.over{background:#ffe4e6;color:var(--rose)}
+.cps{font-size:10px;font-weight:800;padding:0 6px;border-radius:99px;white-space:nowrap}
+.cpu{color:var(--rose);font-weight:900}
+.cpn{width:8px;height:8px;border-radius:50%;background:#2563eb;flex:none}
+.cpb{width:24px;height:24px;border-radius:7px;background:var(--b);color:#fff;font-size:12px;font-weight:800;flex:none}
+.cpb:active{background:var(--bd)}
+.card.fin{opacity:.8}
+.card.fin .cp-t{text-decoration:line-through;color:var(--s500);font-weight:600;-webkit-line-clamp:2}
+@media(max-width:700px){.cp-t{font-size:14.5px}.cp-m{font-size:12.5px}.cpb{width:30px;height:30px;font-size:14px}}
+
+/* ---- narrower kanban columns, collapsible ---- */
+.cols2{display:grid;gap:8px;margin-top:12px;align-items:start;justify-content:start;overflow-x:auto}
+.cols2 .col{padding:7px;border-radius:14px}
+.col-h2{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;padding:2px 3px 7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;text-align:left}
+.col-h2 .n{font-size:11px;padding:1px 8px;border-radius:99px}
+.col.shut{padding:6px 0;min-height:130px;cursor:pointer}
+.col-t{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+.col-t .n{font-size:11px;font-weight:800;padding:1px 7px;border-radius:99px}
+.col-t .vt{writing-mode:vertical-rl;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.dover{outline:2px dashed var(--b);outline-offset:-2px;background:var(--b50)!important}
+
+/* ---- view switch ---- */
+.vsw{display:flex;gap:8px;align-items:center;margin-top:10px}
+.vsw .seg{flex:1}
+
+/* ---- matrix: rows = due timeline, columns = status (or the chosen Group by) ---- */
+.mxs{overflow:auto;max-height:76vh;background:#fff;border:1px solid var(--s200);border-radius:14px;margin-top:10px;-webkit-overflow-scrolling:touch}
+.mxi{display:inline-block;min-width:100%}
+.mxr{display:flex;border-bottom:1px solid var(--s100)}
+.mxl{position:sticky;left:0;z-index:3;flex:none;width:88px;background:#fff;border-right:1px solid var(--s200);padding:6px 8px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;gap:1px;position:sticky}
+.mxl b{font-size:12px;line-height:1.2}
+.mxl span{font-size:10.5px;color:var(--s500)}
+.mxl em{font-style:normal;font-size:10px;color:var(--s400)}
+.mxn{font-style:normal;align-self:flex-start;background:var(--b);color:#fff;border-radius:99px;padding:0 7px;font-size:11px;font-weight:800}
+.mxh{position:sticky;top:0;z-index:5;background:var(--s50)}
+.mxh .mxl{background:var(--s50);cursor:default;z-index:6}
+.mxhc{flex:none;width:var(--cw);padding:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border-right:1px solid var(--s100);color:var(--s600)}
+.mxhc i{font-style:normal;background:var(--s200);border-radius:99px;padding:0 7px}
+.mxhc.sh,.mxc.sh{width:42px;padding:6px 0;justify-content:center;text-align:center}
+.mxhc.sh i{display:none}
+.mxc{flex:none;width:var(--cw);padding:5px;display:flex;flex-direction:column;gap:5px;border-right:1px solid var(--s100);min-height:38px}
+.mxc.sh{align-items:center;color:var(--s500);font-size:11px}
+.mxr.shut .mxl{width:auto;flex:1;flex-direction:row;align-items:center;gap:8px;min-height:32px}
+.mxr.shut .mxl em{margin-left:auto}
+.mxr.ovr .mxl{background:#fff1f2;color:var(--rose)}
+.mxr.ovr .mxl .mxn{background:var(--rose)}
+.mxr.tdy .mxl{background:var(--b50)}
+.mxr.finr .mxl{background:var(--s50)}
+.mxfin{display:flex;flex-wrap:wrap;gap:6px;padding:8px}
+.mxfin .card{width:var(--cw)}
+.mxl.dover,.mxc.dover,.lsh.dover{outline-offset:-2px}
+
+/* ---- list view ---- */
+.lst{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.lsec{background:#fff;border:1px solid var(--s200);border-radius:14px;overflow:hidden}
+.lsec.ovr .lsh{background:#fff1f2;color:var(--rose)}
+.lsh{display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;text-align:left;font-weight:800;font-size:13px;background:var(--s50)}
+.lsh .ls{font-weight:600;font-size:12px;color:var(--s500)}
+.lsh b{margin-left:auto;background:var(--b);color:#fff;border-radius:99px;padding:0 9px;font-size:12px}
+.lsh i{font-style:normal;color:var(--s500)}
+.lsb{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px;padding:6px}
+@media(max-width:700px){.lsb{grid-template-columns:1fr}}
+
+.mxr{width:max-content;min-width:100%}
+.s-wfp{background:#ede9fe;color:#5b21b6}.t-wfp{color:#5b21b6}.t-wfp .n{background:#ede9fe}
+.stp{grid-template-columns:repeat(3,1fr)!important}
+.stp button.on.s-wfp{border-color:#8b5cf6;background:#ede9fe;color:#5b21b6}
+.seg.vsg button.on{background:var(--b);color:#fff}
+.mxhc.sh{flex-direction:column;align-items:center;justify-content:flex-start;gap:4px}
+.mxhc.sh .vt,.mxhc .vt{writing-mode:vertical-rl;max-height:72px;overflow:hidden;white-space:nowrap;font-size:10px}
+.mxl{width:92px}
+.mxc.sh{font-weight:800}
+.mxh .mxl{cursor:default}
+.cols2.snap{scroll-snap-type:x proximity;padding-bottom:6px;margin-left:-4px}.cols2.snap .col{scroll-snap-align:start}
+.cols2 .col-b{max-height:none}
+.kbx{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:8px;margin-top:12px;align-items:flex-start;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+.kbx>.col{flex:0 0 auto;min-width:0;background:rgba(226,232,240,.6);border:1px solid rgba(203,213,225,.6);border-radius:14px;padding:7px}
+.kbx>.col.shut{padding:6px 0;min-height:130px;cursor:pointer}
+.kbx.snap{scroll-snap-type:x proximity}.kbx.snap>.col{scroll-snap-align:start}
+.kbx .col-b{max-height:none;overflow:visible;min-width:0}
+:root{--kw:344px}
+.kbx>.col{flex:0 0 var(--kw)!important;width:var(--kw)!important;min-width:var(--kw)!important;max-width:var(--kw)!important;box-sizing:border-box}
+.kbx>.col.shut{flex:0 0 44px!important;width:44px!important;min-width:44px!important;max-width:44px!important}
+@media(max-width:700px){:root{--kw:min(88vw,340px)}}
+.kbx .card{min-width:0;max-width:100%;overflow:hidden}
+.kbx .c-desc,.kbx .c-more{word-break:break-word;overflow-wrap:anywhere}
+.kbx .c-meta span{max-width:100%}
+.kbx .c-top{flex-wrap:wrap}
+.kbx .col-h2 span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.kbx .qin{width:100%}
+.mxr.mxh{position:sticky;top:0;z-index:5}
 </style>
 </head>
 <body>
@@ -415,20 +525,21 @@ function toast(m,type,act){
   clearTimeout(tt);tt=setTimeout(()=>t.className='',act?5000:(type==='err'?4200:2200));
 }
 
-const ST=['Open','In Progress','Action Needed','Done','Cancelled'];
-const ACTIVE=['Open','In Progress','Action Needed'];
-const ST_CLS={'Open':'open','In Progress':'prog','Action Needed':'act','Done':'done','Cancelled':'can'};
-const ST_SHORT={'Open':'Open','In Progress':'In Progress','Action Needed':'Action','Done':'Done','Cancelled':'Cancelled'};
+const ST=['Backlog','Open','In Progress','Action Needed','WFPA','Done','Cancelled'];
+const ACTIVE=['Open','In Progress','Action Needed','WFPA'];
+const ST_CLS={'Backlog':'bak','WFPA':'wfp','Open':'open','In Progress':'prog','Action Needed':'act','Done':'done','Cancelled':'can'};
+const ST_SHORT={'Backlog':'Backlog','WFPA':'WFPA','Open':'Open','In Progress':'In Progress','Action Needed':'Action','Done':'Done','Cancelled':'Cancelled'};
 const ICON={Home:'\u{1F3E1}',Society:'\u{1F3E2}',Work:'\u{1F4BC}',Finance:'\u{1F4B0}',Admin:'\u{1F6E0}',Others:'\u{1F4CC}'};
 const PRI_RANK={Urgent:3,High:2,Medium:1,Low:0};
 
 /* ================= sanitising (protects against odd/old data) ================= */
-const DEF_CFG=()=>({cats:['Home','Society','Work','Finance','Admin','Others'],tags:[],locs:[],set:{},people:[],pub:true});
+const DEF_CFG=()=>({cats:['Home','Society','Work','Finance','Admin','Reference','Others'],tags:[],locs:[],set:{},people:[],pub:true});
 function fixCfg(c){
   const d=DEF_CFG();if(!c||typeof c!=='object')return d;
   ['cats','tags','locs'].forEach(k=>{if(Array.isArray(c[k]))d[k]=c[k].map(String).filter(Boolean);});
   if(Array.isArray(c.people))d.people=c.people.filter(p=>p&&p.n).map(p=>({n:String(p.n),role:String(p.role||''),ph:String(p.ph||''),em:String(p.em||'')}));
   if(!d.cats.length)d.cats=DEF_CFG().cats;
+  if(!d.cats.some(c=>c.toLowerCase()==='reference'))d.cats.push('Reference');
   if(c.set&&typeof c.set==='object')d.set=c.set;
   if(c.pub===false)d.pub=false;
   return d;
@@ -471,6 +582,11 @@ S.flt=LS.get('it2_flt',[]);if(!Array.isArray(S.flt))S.flt=[];
 S.flt=S.flt.filter(x=>x&&FKEYS.includes(x.f)&&['hl','show','hide'].includes(x.m)&&typeof x.v==='string');
 S.pOpen=LS.get('it2_popen',matchMedia('(min-width:860px)').matches)!==false;
 S.gOpen=!!LS.get('it2_gopen',false);S.gFresh=S.gOpen;S.gtab='';
+S.vw=['mx','ls','kb'].includes(LS.get('it2_vw2',''))?LS.get('it2_vw2',''):'kb';
+S.shut=LS.get('it2_shut',null);if(!S.shut||typeof S.shut!=='object'||Array.isArray(S.shut))S.shut={'st|Backlog':1,'st|Done':1,'st|Cancelled':1};
+S.hidc=LS.get('it2_hidc',null);if(!S.hidc||typeof S.hidc!=='object'||Array.isArray(S.hidc))S.hidc={};
+S.rshut=LS.get('it2_rshut',null);if(!S.rshut||typeof S.rshut!=='object'||Array.isArray(S.rshut))S.rshut={ov:1,bk:1};
+S.finOpen=!!LS.get('it2_finopen',false);S.cmOpen=false;S.refOpen=!!LS.get('it2_refopen',false);
 let HLL=[];
 let OWNP=LS.get('it2_ownpins',[]);if(!Array.isArray(OWNP))OWNP=[];OWNP=OWNP.map(String).filter(Boolean);
 const isPinned=v=>OWNP.some(p=>low(p)===low(v));
@@ -938,7 +1054,7 @@ function sortCol(st,a){
   if(S.fDue!=='all')return a.sort((x,y)=>(x.due||'9999').localeCompare(y.due||'9999')||(PRI_RANK[y.pri]||0)-(PRI_RANK[x.pri]||0));
   return a.sort((x,y)=>(PRI_RANK[y.pri]||0)-(PRI_RANK[x.pri]||0)||(x.due||'9999').localeCompare(y.due||'9999')||(y.raised||'').localeCompare(x.raised||''));
 }
-const NEXT={'Open':['In Progress','\u25B6','Start'],'In Progress':['Done','\u2713','Mark done']};
+const NEXT={'Backlog':['Open','\u25B2','Activate'],'Open':['In Progress','\u25B6','Start'],'In Progress':['Done','\u2713','Mark done']};
 const hlc=i=>HLL.length?(HLL.some(x=>hasVal(i,x.f,x.v))?' hl':' dim'):'';
 function card(i){
   const od=isOver(i),np=(i.ph||[]).length+pendingPh(i.id),nx=NEXT[i.st],th=(i.ph||[]).find(p=>p.k!=='proof');
@@ -1080,7 +1196,7 @@ function waPhone(name){const p=findPerson(name);return p&&p.ph?waDigits(p.ph):''
 const waHref=(digits,text)=>'https://wa.me/'+digits+'?text='+encodeURIComponent(text);
 function drawDetail(){
   const i=cur();if(!i){closeDetail();return;}
-  const chips=['Open','In Progress','Action Needed','Done'].map(s=>`<button class="s-${ST_CLS[s]}${D.st===s?' on':''}" data-act="dst" data-s="${s}">${ST_SHORT[s]==='Action'?'Action<br>Needed':s}</button>`).join('');
+  const chips=['Backlog','Open','In Progress','Action Needed','WFPA','Done'].map(s=>`<button class="s-${ST_CLS[s]}${D.st===s?' on':''}" data-act="dst" data-s="${s}">${ST_SHORT[s]==='Action'?'Action<br>Needed':s}</button>`).join('');
   $('#detail').innerHTML=`<div class="sheet"><div class="sh-h"><span class="cid">${esc(i.id)}</span><span class="badge s-${ST_CLS[i.st]||'open'}" id="dBadge">${esc(i.st)}</span><span class="hint">${esc(shortBy(i.by))} \u00b7 ${fdt(i.raised)}</span><button class="x" data-act="close">\u2715</button></div>
   <div class="sh-b">
    ${i.th?`<div class="box mailbox" style="margin-top:0;margin-bottom:10px">\u2709 From Gmail: <b>${esc(i.mf||'')}</b>${i.ms?' \u00b7 '+esc(i.ms):''} \u00b7 <a href="https://mail.google.com/mail/u/0/#all/${esc(i.th)}" target="_blank" rel="noopener">Open in Gmail</a><br><span class="hint">Your email replies go into this same Gmail thread.</span></div>`:''}
@@ -1561,6 +1677,255 @@ setInterval(()=>{
   else if(Date.now()-S.lastSync>90000)sync();
 },20000);
 window.addEventListener('error',e=>{console.error(e.error||e.message);});
+
+/* ================= patch 4: Matrix / List / Kanban views, compact cards, collapsible columns + rows, Backlog =================
+   Function declarations below replace the older ones of the same name (renderBoard0); the H.* lines add handlers. */
+const FIN=['Done','Cancelled'];
+const isFin=i=>FIN.includes(i.st);
+const sk=(f,k)=>f+'|'+k;
+const isShut=(f,k)=>!!S.shut[sk(f,k)];
+const isHid=(f,k)=>!!S.hidc[sk(f,k)];
+function setShut(f,k,v){if(v)S.shut[sk(f,k)]=1;else delete S.shut[sk(f,k)];LS.set('it2_shut',S.shut);}
+function setHid(f,k,v){if(v)S.hidc[sk(f,k)]=1;else delete S.hidc[sk(f,k)];LS.set('it2_hidc',S.hidc);}
+
+/* ---- due-date timeline rows: Overdue | each day of this week | +7 | +14 | +30 | +90 | 90+ | No date ---- */
+function today0(){const T=new Date();T.setHours(0,0,0,0);return T;}
+function dOff(s,T){const a=String(s).split('-');return Math.round((new Date(+a[0],a[1]-1,+a[2])-T)/864e5);}
+function tlRows(T){
+  T=T||today0();
+  const add=n=>{const d=new Date(T);d.setDate(d.getDate()+n);return d;};
+  const sh=d=>d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+  const e=6-((T.getDay()+6)%7);   /* days left until Sunday */
+  const R=[{k:'ov',label:'Overdue',sub:'before today',rng:'',lo:-100000,hi:-1,dd:'over',cls:' ovr'}];
+  for(let d=0;d<=e;d++){const dt=add(d);R.push({k:'d'+d,label:d===0?'Today':d===1?'Tomorrow':dt.toLocaleDateString('en-IN',{weekday:'short'}),sub:sh(dt),rng:'',lo:d,hi:d,dd:ymd(dt),cls:d===0?' tdy':'',day:1});}
+  const n7=e+7,n14=e+21,n30=n14+30;
+  const rg=(k,label,sub,lo,hi)=>({k,label,sub,rng:sh(add(lo))+' – '+sh(add(hi)),lo,hi,dd:ymd(add(lo)),cls:''});
+  R.push(rg('w1','+7','Next week',e+1,n7),rg('w2','+14','Fortnight',n7+1,n14),rg('w3','+30','Month',n14+1,n30),rg('w4','+90','3 months',n30+1,90));
+  R.push({k:'w5',label:'90+',sub:'Beyond',rng:'after '+sh(add(90)),lo:91,hi:100000,dd:ymd(add(91)),cls:''});
+  R.push({k:'nd',label:'No date',sub:'',rng:'',lo:null,hi:null,dd:'none',cls:''});
+  return R;
+}
+function rowOf(i,R,T){
+  if(!i.due)return'nd';const off=dOff(i.due,T);
+  for(let k=0;k<R.length;k++){const r=R[k];if(r.lo!=null&&off>=r.lo&&off<=r.hi)return r.k;}
+  return'nd';
+}
+
+/* ---- compact card: title, owner, due, tiny status; no description ---- */
+function cc(i,o){
+  o=o||{};const od=isOver(i),nx=NEXT[i.st],fin=isFin(i),ow=i.as?String(i.as).split(/\s+/)[0]:'';
+  return`<div class="card cp p-${esc(String(i.pri).toLowerCase())}${hlc(i)}${fin?' fin':''}" data-act="open" data-id="${esc(i.id)}" title="${esc(i.id)}">
+  <div class="cp-t">${esc(String(i.d).split('\n')[0])}</div>
+  <div class="cp-m">${isNew(i)?'<span class="cpn" title="New reply"></span>':''}${isPending(i.id)?'<span class="unsynced" title="Not saved yet"></span>':''}${i.pri==='Urgent'?'<span class="cpu">!!</span>':i.pri==='High'?'<span class="cpu">!</span>':''}<span class="cpo${ow?'':' mute'}">${esc(ow||'—')}</span><span class="sp"></span>${o.st?`<span class="cps s-${ST_CLS[i.st]||'open'}">${esc(ST_SHORT[i.st]||i.st)}</span>`:''}${i.due&&!fin&&!o.nodue?`<span class="cpd${od?' over':''}">${esc(fd(i.due))}</span>`:''}${nx&&!fin?`<button class="cpb" data-act="next" data-id="${esc(i.id)}" title="${esc(nx[2])}">${nx[1]}</button>`:''}</div></div>`;
+}
+
+/* bar with the finished tasks: kept small and closed unless asked for. Dropping a card on it marks it Done. */
+function finBar(fin){
+  fin=fin.slice().sort((a,b)=>(b.closed||'').localeCompare(a.closed||''));
+  let h=`<button class="gtog" data-act="fintog" data-ds="Done"><span>✓ Done &amp; Cancelled</span><b>${fin.length}</b><i>${S.finOpen?'▴':'▾'}</i></button>`;
+  if(S.finOpen)h+=`<div class="gbox" style="padding:6px"><div class="lsb">${fin.slice(0,40).map(i=>cc(i,{st:1})).join('')||'<div class="empty" style="padding:12px">Nothing finished in this view</div>'}</div>${fin.length>40?`<div class="gleg">Showing 40 of ${fin.length}. Use search to narrow down.</div>`:''}</div>`;
+  return h;
+}
+const REFG='Reference';
+const isRef=i=>!isFin(i)&&low(i.cat)==='reference';   /* Reference is a Category */
+function refBar(refs){
+  refs=refs.slice().sort((a,b)=>String(a.d).localeCompare(String(b.d)));
+  let h=`<button class="gtog" data-act="reftog" data-dg="${REFG}" data-dropx="ref"><span>\u{1F4CC} Reference</span><b>${refs.length}</b><i>${S.refOpen?'\u25B4':'\u25BE'}</i></button>`;
+  if(S.refOpen)h+=`<div class="gbox" style="padding:6px"><div class="lsb">${refs.slice(0,60).map(i=>cc(i,{st:1})).join('')||'<div class="empty" style="padding:12px">Nothing here. Set the category of a task to Reference, or drop a card on this bar.</div>'}</div></div>`;
+  return h;
+}
+function bottomBars(list){
+  return refBar(list.filter(isRef))+finBar(list.filter(isFin)).replace('class="gtog" data-act="fintog" data-ds="Done"','class="gtog" data-act="fintog" data-ds="Done" data-dropx="Done"');
+}
+function taskPool(list){
+  let a=list.filter(i=>!isFin(i)&&!isRef(i));
+  if(S.gb==='st')a=a.filter(i=>!isHid('st',i.st));
+  return a;
+}
+
+/* ---- MATRIX: rows = due timeline, columns = Group by field (Status by default) ---- */
+function mxCols(act){
+  const f=S.gb;let keys=colKeys(act);
+  if(f==='st')keys=keys.filter(k=>!FIN.includes(k));
+  return keys.filter(k=>!isHid(f,k));
+}
+function renderMatrix(list){
+  const T=today0(),R=tlRows(T),f=S.gb,act=taskPool(list),fin=list.filter(isFin),keys=mxCols(act);
+  const cell={};R.forEach(r=>{cell[r.k]={};keys.forEach(k=>cell[r.k][k]=[]);});
+  const colN={};keys.forEach(k=>colN[k]=0);
+  act.forEach(i=>{const rk=rowOf(i,R,T);valsOf(i,f).forEach(v=>{const k=v===''?NONE:v;if(cell[rk][k]){cell[rk][k].push(i);colN[k]++;}});});
+  const head=keys.map(k=>{
+    const lab=f==='st'?k:vlab(k);
+    return isShut(f,k)?`<div class="mxhc sh" data-act="coltog" data-k="${esc(k)}" data-dc="${esc(k)}" title="${esc(lab)} (tap to open)"><span>▸</span><span class="vt">${esc(lab)}</span></div>`
+      :`<div class="mxhc" data-act="coltog" data-k="${esc(k)}" data-dc="${esc(k)}" title="Tap to collapse"><span>${esc(lab)}</span><i>${colN[k]}</i></div>`;}).join('');
+  const rows=R.map(r=>{
+    const all=keys.reduce((s,k)=>s+cell[r.k][k].length,0),shut=!!S.rshut[r.k];
+    const lab=`<div class="mxl" data-act="rowt" data-r="${r.k}" data-dd="${r.dd}" title="${esc(r.rng||r.sub)}"><b>${esc(r.label)}</b>${r.sub?`<span>${esc(r.sub)}</span>`:''}${all?`<i class="mxn">${all}</i>`:''}<em>${shut?'▸':'▾'}</em></div>`;
+    if(shut)return`<div class="mxr shut${r.cls}">${lab}</div>`;
+    return`<div class="mxr${r.cls}">${lab}`+keys.map(k=>{
+      const a=sortCol('x',cell[r.k][k].slice());
+      return isShut(f,k)?`<div class="mxc sh" data-dd="${r.dd}" data-dc="${esc(k)}">${a.length||''}</div>`
+        :`<div class="mxc" data-dd="${r.dd}" data-dc="${esc(k)}">${a.slice(0,40).map(i=>cc(i,{nodue:!!r.day})).join('')}</div>`;}).join('')+'</div>';
+  }).join('');
+  return`<div class="mxs"><div class="mxi"><div class="mxr mxh"><div class="mxl"><b>Due</b></div>${head}</div>${rows}</div></div>`
+    +`<div class="hint" style="margin:6px 2px 0">${desk()?'Drag':'Press and hold, then drag'} a card onto a day row to reschedule it, onto a column to change ${f==='st'?'status':GFn(f).toLowerCase()}. Tap a row or column header to collapse it.</div>`
+    +bottomBars(list);
+}
+
+/* ---- LIST: the same timeline as collapsible sections of small cards (best on a phone) ---- */
+function renderList(list){
+  const T=today0(),R=tlRows(T),fin=list.filter(isFin);let act=taskPool(list);
+  const bk=act.filter(i=>i.st==='Backlog');act=act.filter(i=>i.st!=='Backlog');
+  const by={};R.forEach(r=>by[r.k]=[]);act.forEach(i=>by[rowOf(i,R,T)].push(i));
+  const sec=(k,label,sub,arr,dd,ds,cls,day)=>{
+    if(!arr.length)return'';const shut=!!S.rshut[k];sortCol('x',arr);
+    return`<div class="lsec${cls||''}"><button class="lsh" data-act="rowt" data-r="${k}"${dd!=null?` data-dd="${dd}"`:''}${ds?` data-ds="${ds}"`:''}><span>${esc(label)}</span><span class="ls">${esc(sub)}</span><b>${arr.length}</b><i>${shut?'▸':'▾'}</i></button>${shut?'':`<div class="lsb">${arr.slice(0,60).map(i=>cc(i,{st:1,nodue:!!day})).join('')}</div>`}</div>`;};
+  const body=R.map(r=>sec(r.k,r.label,r.sub+(r.rng?' · '+r.rng:''),by[r.k],r.dd,'',r.cls,r.day)).join('')+sec('bk','Backlog','not scheduled',bk,null,'Backlog','',0);
+  return`<div class="lst">${body||'<div class="empty">Nothing here with the current filters.</div>'}${bottomBars(list)}</div>`
+    +`<div class="hint" style="margin:6px 2px 0">${desk()?'Drag':'Press and hold, then drag'} a card onto a section heading to reschedule it (Backlog heading = move to Backlog).</div>`;
+}
+
+/* ---- KANBAN: narrower columns (about 2/3 of before), each collapsible ---- */
+const KCLS={'Backlog':'t-bak','Open':'t-open','In Progress':'t-prog','Action Needed':'t-act','WFPA':'t-wfp','Done':'t-done','Cancelled':'t-can'};
+function renderKanban(list,keys,g,tk){
+  const f=S.gb,bars=bottomBars(list);
+  if(!keys.length)return'<div class="empty">Nothing to show with the current filters.</div>'+bars;
+  /* always one horizontal row of side-by-side columns (flex, never wrapping); extra columns scroll sideways */
+  return`<div class="kbx${desk()?'':' snap'}">`+keys.map(k=>{
+    const lab=f==='st'?k:vlab(k),n=g[k].length,cls=f==='st'?(KCLS[k]||'t-gen'):'t-gen';
+    if(isShut(f,k))return`<div class="col shut ${cls}" data-act="coltog" data-k="${esc(k)}" data-drop="${esc(k)}" data-dc="${esc(k)}" title="${esc(lab)} (tap to open)"><div class="col-t"><span class="n">${n}</span><span class="vt">${esc(lab)}</span></div></div>`;
+    return`<div class="col"><button class="col-h2 ${cls}" data-act="coltog" data-k="${esc(k)}" title="Tap to collapse"><span>${esc(lab)}</span><span class="n">${n}</span></button><div class="col-b" data-drop="${esc(k)}" data-dc="${esc(k)}"><input class="in qin" data-s="${esc(k)}" placeholder="+ Add" maxlength="140" enterkeyhint="done" autocomplete="off">${cards(g[k].slice(0,60))||'<div class="empty" style="padding:14px 0">\u2014</div>'}</div></div>`;
+  }).join('')+'</div>'+bars;
+}
+
+/* ---- view switch + column menu (shown / collapsed / hidden) ---- */
+function renderVw(){
+  let box=$('#bVw');if(!box){box=document.createElement('div');box.id='bVw';$('#bTools').before(box);}
+  const f=S.gb;let ks=f==='st'?ST.filter(k=>!FIN.includes(k)):colKeys(filtered());
+  let h='<div class="vsw"><div class="seg vsg">'+[['mx','▦ Matrix'],['ls','☰ List'],['kb','▥ Kanban']].map(a=>`<button class="${S.vw===a[0]?'on':''}" data-act="vw" data-v="${a[0]}">${a[1]}</button>`).join('')+`</div><button class="btn sec sm${S.cmOpen?' tgl':''}" data-act="colmenu">⚙ Columns</button></div>`;
+  if(S.cmOpen)h+='<div class="ptool"><div class="hint">Tap a column to cycle: shown → collapsed → hidden. Done / Cancelled and the Reference group live in the bars at the bottom. The columns follow &ldquo;Group by&rdquo; below.</div><div class="cats">'+ks.map(k=>{
+    const hid=isHid(f,k),sh=isShut(f,k);
+    return`<button class="chip${!hid&&!sh?' on':''}" style="${hid?'text-decoration:line-through;opacity:.6':''}" data-act="colst" data-k="${esc(k)}">${esc(f==='st'?k:vlab(k))} · ${hid?'hidden':sh?'collapsed':'shown'}</button>`;}).join('')+'</div></div>';
+  box.innerHTML=h;
+}
+
+function renderBoard0(){
+  const list=filtered(),f=S.gb;
+  HLL=S.flt.filter(x=>x.m==='hl');
+  const kpool=list.filter(i=>!isFin(i)&&!isRef(i));
+  const keys=colKeys(kpool).filter(k=>!isHid(f,k)&&!(f==='st'&&FIN.includes(k))),g={};keys.forEach(k=>g[k]=[]);
+  kpool.forEach(i=>valsOf(i,f).forEach(v=>{const k=v===''?NONE:v;if(g[k])g[k].push(i);}));
+  keys.forEach(k=>sortCol(f==='st'?k:'x',g[k]));
+  const act=filtered(true).filter(i=>ACTIVE.includes(i.st)),cnt={};act.forEach(i=>cnt[i.cat]=(cnt[i.cat]||0)+1);
+  const cats=S.cfg.cats.concat(Object.keys(cnt).filter(c=>!S.cfg.cats.includes(c)));
+  $('#bCats').innerHTML=`<button class="chip${!S.fCat?' on':''}" data-act="cat" data-c="">All<b>${act.length}</b></button>`+cats.map(c=>`<button class="chip${S.fCat===c?' on':''}" data-act="cat" data-c="${esc(c)}">${ICON[c]||'\u{1F4CC}'} ${esc(c)}<b>${cnt[c]||0}</b></button>`).join('');
+  const dn=S.fDue==='c'?S.dueN:+S.fDue,nOpen=list.filter(i=>ACTIVE.includes(i.st)).length;
+  $('#bDue').innerHTML=`<div class="cats" style="margin-top:8px;align-items:center"><button class="chip${S.fDue==='all'?' on':''}" data-act="duewin" data-d="all">All tasks</button><button class="chip${S.fDue==='7'?' on':''}" data-act="duewin" data-d="7">Next 7 days</button><button class="chip${S.fDue==='15'?' on':''}" data-act="duewin" data-d="15">15 days</button><button class="chip${S.fDue==='30'?' on':''}" data-act="duewin" data-d="30">30 days</button><button class="chip${S.fDue==='c'?' on':''}" data-act="duewin" data-d="c">Custom</button>${S.fDue==='c'?`<input id="dueN" class="dueN" type="number" inputmode="numeric" min="1" max="365" value="${S.dueN}" aria-label="Custom number of days"><span class="hint" style="flex:none">days</span>`:''}</div>`+(S.fDue==='all'?'':`<div class="dueH">Showing ${nOpen} open task(s) due within ${dn} day(s), overdue included. Tasks with no due date appear under All tasks.</div>`);
+  const fxl={over:'Overdue only',stale:'No recent update',unas:'Unassigned',new:'New replies'};
+  const nn=newCount();
+  $('#bFx').innerHTML=S.fx?`<span class="fx">${fxl[S.fx]}<button data-act="clrfx">✕</button></span>`:(nn?`<button class="chip on newchip" data-act="newfx">● ${nn} new repl${nn>1?'ies':'y'} · show</button>`:'');
+  const qd=qaDefaults(qaStatus());
+  $('#qaHint').textContent='New task gets: '+(ICON[qd.cat]||'\u{1F4CC}')+' '+qd.cat+' · '+(qd.as||'Unassigned')+(qd.g?' · \u{1F4C1} '+qd.g:'')+' · due '+fd(qd.due)+(qd.st!=='Open'?' · '+qd.st:'')+'. Edit it afterwards if needed.';
+  renderVw();renderTools();
+  const tk=f==='st'?(keys.includes(S.tab)?S.tab:(keys[0]||'')):curKey(keys),showPills=false;
+  $('#bPills').classList.toggle('hidden',!showPills);
+  $('#bPills').innerHTML=showPills?keys.map(k=>`<button class="pill${tk===k?' on':''}" data-act="tab" data-s="${esc(k)}">${esc(f==='st'?ST_SHORT[k]:vlab(k))}<b>${g[k].length}</b></button>`).join(''):'';
+  const stuckN=!draining&&OUT.some(o=>(o.tries||0)>=4),pf=POUT.filter(o=>o.failed).length;
+  $('#bBanner').innerHTML=S.err&&!S.loaded?`<div class="banner" data-act="retry">Could not load from Google Sheets: ${esc(S.err)}. Tap for details.</div>`:(stuckN&&LASTERR?`<div class="banner" data-act="retry">${OUT.length} change(s) not saved: ${esc(LASTERR.m)} Tap for details.</div>`:(pf?`<div class="banner" data-act="rph">${pf} photo(s) not uploaded${PERR?': '+esc(PERR.m):''}. Tap to retry.</div>`:''));
+  renderGantt();
+  if(!S.loaded&&!S.issues.length&&!S.err){$('#board').innerHTML='<div class="list"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';return;}
+  const old=$('#board .mxs'),pos=old?[old.scrollLeft,old.scrollTop]:null;
+  $('#board').innerHTML=S.vw==='mx'?renderMatrix(list):S.vw==='ls'?renderList(list):renderKanban(list,keys,g,tk);
+  const nw=$('#board .mxs');if(nw&&pos){nw.scrollLeft=pos[0];nw.scrollTop=pos[1];}
+}
+
+/* ---- drag a card (mouse, or press-and-hold on touch) onto a day row and/or a column ---- */
+let CD=null,cGhost=null,cOver=null,cAs=0;
+const dzOf=el=>el&&el.closest?el.closest('[data-dd],[data-dc],[data-ds],[data-dg]'):null;
+function cdBegin(){
+  if(!CD||CD.on)return;CD.on=true;
+  const i=S.issues.find(x=>x.id===CD.id);
+  cGhost=document.createElement('div');cGhost.className='vghost';cGhost.textContent=String(i?i.d:'').split('\n')[0].slice(0,32);document.body.appendChild(cGhost);
+  CD.el.style.opacity='.35';document.body.classList.add('dragging');try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}
+  cdMove(CD.x,CD.y);cAs=setInterval(cdScroll,30);
+}
+function cdScroll(){
+  if(!CD||!CD.on)return;const sc=$('.mxs'),x=CD.x,y=CD.y;
+  if(sc){const r=sc.getBoundingClientRect();if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom){
+    if(x<r.left+110)sc.scrollLeft-=14;else if(x>r.right-50)sc.scrollLeft+=14;
+    if(y<r.top+50)sc.scrollTop-=14;else if(y>r.bottom-50)sc.scrollTop+=14;}}
+  if(y<80)scrollBy(0,-14);else if(y>innerHeight-80)scrollBy(0,14);
+}
+function cdMove(x,y){
+  CD.x=x;CD.y=y;if(cGhost){cGhost.style.left=x+'px';cGhost.style.top=(y-(CD.touch?60:20))+'px';}
+  const z=dzOf(document.elementFromPoint(x,y));
+  if(z!==cOver){if(cOver)cOver.classList.remove('dover');cOver=z;if(z)z.classList.add('dover');}
+}
+function cdEnd(drop){
+  if(!CD)return;const was=CD.on,id=CD.id,x=CD.x,y=CD.y;
+  clearTimeout(CD.tm);clearInterval(cAs);
+  if(cGhost){cGhost.remove();cGhost=null;}if(cOver){cOver.classList.remove('dover');cOver=null;}
+  if(CD.el)CD.el.style.opacity='';document.body.classList.remove('dragging');CD=null;
+  if(was){noClickUntil=Date.now()+450;if(drop)dropCard(id,x,y);}
+}
+function dropCard(id,x,y){
+  const i=S.issues.find(q=>q.id===id);if(!i)return;
+  const el=document.elementFromPoint(x,y);
+  const rE=el&&el.closest?el.closest('[data-dd]'):null,cE=el&&el.closest?el.closest('[data-dc]'):null,sE=el&&el.closest?el.closest('[data-ds]'):null,gE=el&&el.closest?el.closest('[data-dg]'):null;
+  if(!rE&&!cE&&!sE&&!gE){toast('Drop onto a day row or a column');return;}
+  const dd=rE?rE.dataset.dd:null,parts=[],ch={};let toCancel=false,viaField=null;
+  if(dd!==null&&dd!=='over'){const nd=dd==='none'?'':dd;if(nd!==i.due){ch.due=nd;parts.push('due → '+(nd?fd(nd):'none'));}}
+  const stT=sE?sE.dataset.ds:(cE&&S.gb==='st'?cE.dataset.dc:null);
+  if(stT){if(stT!==i.st){if(stT==='Cancelled')toCancel=true;else{ch.st=stT;parts.push(stT);}}}
+  else if(cE&&S.gb!=='st')viaField=cE.dataset.dc;
+  if(gE){if(!isRef(i)){ch.cat=gE.dataset.dg;parts.push('category Reference');}}
+  else if(isRef(i)){ch.cat='Others';parts.push('category Others');}
+  if(dd==='over'&&!parts.length&&!toCancel&&viaField===null){toast('Drop on a day row to reschedule');return;}
+  if(Object.keys(ch).length){commit(i,ch,'','');toast(id+': '+parts.join(' · '));}
+  if(viaField!==null)applyVal(id,S.gb,viaField);
+  if(toCancel)changeStatus(id,'Cancelled');
+  if(!Object.keys(ch).length&&viaField===null&&!toCancel)toast('No change');
+}
+document.addEventListener('pointerdown',e=>{
+  if(e.button>0||CD||DR)return;
+  const c=e.target.closest&&e.target.closest('.card.cp');if(!c)return;
+  if(e.target.closest('button,a,input'))return;
+  CD={el:c,id:c.dataset.id,x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,on:false,touch:e.pointerType!=='mouse'};
+  if(CD.touch)CD.tm=setTimeout(cdBegin,350);
+});
+document.addEventListener('pointermove',e=>{
+  if(!CD)return;
+  if(CD.on){cdMove(e.clientX,e.clientY);return;}
+  CD.x=e.clientX;CD.y=e.clientY;
+  if(Math.hypot(e.clientX-CD.sx,e.clientY-CD.sy)>(CD.touch?10:6)){
+    if(CD.touch){clearTimeout(CD.tm);CD=null;}else cdBegin();   /* a touch that moves first is a scroll, not a drag */
+  }
+});
+document.addEventListener('pointerup',()=>cdEnd(true));
+document.addEventListener('pointercancel',()=>cdEnd(false));
+document.addEventListener('touchmove',e=>{if(CD&&CD.on)e.preventDefault();},{passive:false});
+document.addEventListener('contextmenu',e=>{if(CD||(e.target.closest&&e.target.closest('.card.cp')&&matchMedia('(pointer:coarse)').matches))e.preventDefault();});
+
+/* ---- handlers ---- */
+H.vw=t=>{S.vw=t.dataset.v;LS.set('it2_vw2',S.vw);renderBoard();};
+H.colmenu=()=>{S.cmOpen=!S.cmOpen;renderBoard();};
+H.colst=t=>{const f=S.gb,k=t.dataset.k;if(isHid(f,k)){setHid(f,k,false);setShut(f,k,false);}else if(isShut(f,k))setHid(f,k,true);else setShut(f,k,true);renderBoard();};
+H.coltog=t=>{if(Date.now()<noClickUntil)return;const f=S.gb,k=t.dataset.k;setShut(f,k,!isShut(f,k));renderBoard();};
+H.rowt=t=>{if(Date.now()<noClickUntil)return;const r=t.dataset.r;if(S.rshut[r])delete S.rshut[r];else S.rshut[r]=1;LS.set('it2_rshut',S.rshut);renderBoard();};
+H.fintog=()=>{if(Date.now()<noClickUntil)return;S.finOpen=!S.finOpen;LS.set('it2_finopen',S.finOpen);renderBoard();};
+H.reftog=()=>{if(Date.now()<noClickUntil)return;S.refOpen=!S.refOpen;LS.set('it2_refopen',S.refOpen);renderBoard();};
+document.addEventListener('dragover',e=>{const c=e.target.closest&&e.target.closest('[data-dropx]');if(c){e.preventDefault();c.classList.add('dover');}});
+document.addEventListener('dragleave',e=>{const c=e.target.closest&&e.target.closest('[data-dropx]');if(c)c.classList.remove('dover');});
+document.addEventListener('drop',e=>{
+  const c=e.target.closest&&e.target.closest('[data-dropx]');if(!c)return;
+  e.preventDefault();c.classList.remove('dover');const id=dragId;dragId=null;if(!id)return;
+  const i=S.issues.find(x=>x.id===id);if(!i)return;
+  if(c.dataset.dropx==='Done')changeStatus(id,'Done');
+  else if(!isRef(i)){commit(i,{cat:REFG},'','');toast(id+' \u2192 Reference');}
+});
+H.open=t=>{if(Date.now()<noClickUntil)return;openDetail(t.dataset.id);};
+{const nx0=H.next;H.next=(t,e)=>{if(Date.now()<noClickUntil){e.stopPropagation();return;}nx0(t,e);};}
+
 
 /* ================= start (cannot leave the page half-initialised) ================= */
 function boot(){fillLists();defaultDue();drawSlots();setSync();show('board');}
